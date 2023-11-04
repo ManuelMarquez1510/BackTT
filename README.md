@@ -16,7 +16,7 @@ python3 -m ensurepip --default-pip
 
 ```
 
-source env/bin/activate
+source ./env/bin/activate
 
 ```
 
@@ -37,5 +37,5 @@ pip3 list
 ## 🚀 Teniendo instaladas las dependencias corremos el proyecto con
 
 ```
-python3 ./src/app.py
+python3 index.py
 ```
