@@ -19,8 +19,13 @@ python3 -m ensurepip --default-pip
 source ./env/bin/activate
 
 ```
+3. instalar mysqlclient
 
-3. Instalar las dependencias con pip
+```
+sudo apt-get install libmysqlclient-dev
+```
+
+4. Instalar las dependencias con pip
 
 ```
 
@@ -28,7 +33,7 @@ pip3 install -r requirements.txt
 
 ```
 
-4. Comprobamos la instalación de las dependencias encontradas en `requirements.txt`
+5. Comprobamos la instalación de las dependencias encontradas en `requirements.txt`
 
 ```
 pip3 list
