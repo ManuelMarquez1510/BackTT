@@ -58,13 +58,12 @@ def create():
     body = request.get_json()
     reference_value = f'"{body["reference"]}"' if "reference" in body and body["reference"] else "NULL"
     
-
     # Verifica si se proporcionaron todos los datos necesarios
-    # if "rules" not in body or body['rules'] is None :
-    #     return jsonify({'message': 'Se requieren reglas para asignar a la política'}), 400
+    if "rules" not in body or body['rules'] is None or not len(body['rules']):
+        return jsonify({'message': 'Se requieren reglas para asignar a la política'}), 400
 
 
-    sql = f"""
+    insert_policy = f"""
     INSERT INTO
         policy (name, version, reference, operative_system_id)
     VALUES
@@ -77,7 +76,23 @@ def create():
     """
 
     try:
-        cursor.execute(sql)
+        cursor.execute("START TRANSACTION")
+        cursor.execute(insert_policy) # Inserto la nueva política
+        policy_id = cursor.lastrowid  # Obtener el ID de la política recién creada
+
+        # Iterar sobre las reglas e insertar en la otra tabla
+        for rule_id in body['rules']:
+            insert_rules = f"""
+            INSERT INTO
+                policy_rule (policy_id, rule_id)
+            VALUES
+                (
+                    {policy_id},
+                    {rule_id}
+                )
+            """
+            cursor.execute(insert_rules)
+
         db.connection.commit()
         return jsonify({'message': 'Política creada!'}), 201
     except Exception as e:
