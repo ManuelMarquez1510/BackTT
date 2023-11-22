@@ -13,7 +13,6 @@ Documentar cada API con
 
 #Modulos requeridos
 import evaluation
-import src.services.pam_interface as pam_interface
 import connection
 
 
@@ -27,7 +26,14 @@ import connection
 
 """
 
+""" 
+Respuesta
+ { 'message' : *********** ,
+    'error' : 1|0    
+}
+"""
 def init_connection (host, user, password):
+    return {'message' : f'OK', 'Error': '0'}
     return connection.init_connection (host, user, password)
 
 

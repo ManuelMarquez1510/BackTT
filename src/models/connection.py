@@ -135,14 +135,16 @@ class connection:
     def init_connetion (host, user, password):
         #Verificar estado del puerto con el host
         if not connection.check_host_port (host, port=22): 
-            return (0,f'Puerto o host no esta habilitado')
+            return {'message' : f'Puerto o host no esta habilitado', 'Error': '1'} 
         
         result_tuple = connection.check_connection (host, user, password)
         hostname = result_tuple[1]
         if not result_tuple[0]:
-            return (0,f'Credenciales no validas')
-        #resugardar credenciales
-        return 1
+            return {'message' : f'Credenciales no validas', 'Error': '1'} 
+        
+        pam.set_credentials(host, user, password)
+
+        return {'message' : f'{hostname}', 'Error': '0'}
 
         
 
