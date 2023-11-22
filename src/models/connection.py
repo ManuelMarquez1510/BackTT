@@ -129,7 +129,7 @@ class connection:
 
 
     """ METODOS EXPUESTOS AL INTERNAL API """
-
+    @staticmethod
     def init_connetion (host, user, password):
         #Verificar estado del puerto con el host
         if not connection.check_host_port (host, port=22): 
