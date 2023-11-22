@@ -17,7 +17,7 @@ def get_credentials(host):
             return (dv['user'], dv['password'])
     return 0
 
-def upload_credentials(host, user, password): 
+def set_credentials(host, user, password): 
     next
 
 def update_credentials(host, user, password):

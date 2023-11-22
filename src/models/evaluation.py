@@ -23,7 +23,6 @@ class evaluation:
         date_time = datetime.now()
         self.date = date_time.strftime("%d-%m-%y")
         self.time = date_time.strftime("%H:%M:%S")
-        policy_evaluation_name = f"{self.policy}_{self.date}"
         
         rules_id = []
         for rule in self.policy['benchmark']: 
@@ -78,12 +77,13 @@ class evaluation:
             evaluation.evaluate_linux_policy()
         print('Evaluation')
 
+
     def evaluate_windows_policy (self):
-        next
+        print ("Evaluación de politica windows")
     
 
     def evaluate_linux_policy (self):
-        next
+        print ("Evaluación de politica windows")
 
 
 

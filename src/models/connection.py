@@ -82,11 +82,13 @@ class connection:
         client = pk.client.SSHClient()
         client.set_missing_host_key_policy(pk.AutoAddPolicy())
         status = 0
+        hostname = ''
         try:
             
             client.connect(host, port, user, password)
-
             print("Conexion realizada con exito")
+            _stdin, _stdout,_stderr = client.exec_command('hostname')
+            hostname =_stdout.read().decode()
             status = 1 
 
         except Exception as e:
@@ -95,7 +97,7 @@ class connection:
         finally:
             client.close()
 
-        return status
+        return (status,hostname)
 
     @staticmethod
     def check_host_port(host, port=22):
@@ -133,10 +135,12 @@ class connection:
     def init_connetion (host, user, password):
         #Verificar estado del puerto con el host
         if not connection.check_host_port (host, port=22): 
-            return (f'Puerto o host no esta habilitado')
+            return (0,f'Puerto o host no esta habilitado')
         
-        if not connection.check_connection (host, user, password):
-            return (f'Credenciales no validas')
+        result_tuple = connection.check_connection (host, user, password)
+        hostname = result_tuple[1]
+        if not result_tuple[0]:
+            return (0,f'Credenciales no validas')
         #resugardar credenciales
         return 1
 
