@@ -13,7 +13,7 @@ Documentar cada API con
 
 #Modulos requeridos
 import evaluation
-import pam_interface
+import src.services.pam_interface as pam_interface
 import connection
 
 

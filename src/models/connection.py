@@ -4,7 +4,7 @@
 
 #Bibliotecas
 import paramiko as pk
-import pam_interface as pam
+import src.services.pam_interface as pam
 import socket
 import os
 import subprocess
