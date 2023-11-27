@@ -4,10 +4,6 @@ from datetime import datetime
 from connection import connection
 import hashlib
 
-
-#TESTING
-import main_test
-
 class evaluation: 
 
     def __init__ (self, name, policy, assets) -> None: 
@@ -40,7 +36,7 @@ class evaluation:
             'policy' : self.policy['name'],
             'date' : self.date,
             'time' : self.time,
-            'assets' : {'hostnames' : asset_name, 'host': asset_ip},
+            'assets' : {'host': asset_ip},
             'rules_id' : rules_id
             }
 
@@ -61,7 +57,7 @@ class evaluation:
 
         self.result = evaluation_result
 
-        evaluation.evaluate_result()
+        #evaluation.evaluate_result()
         
         return (evaluation_result)
     
@@ -90,20 +86,95 @@ class evaluation:
 
     
 """ METODOS EXPUESTOS AL INTERNAL API """
-
+@staticmethod
 def evaluate_host (host): 
 
-    policy = main_test.get_policy()
-    test = evaluation("evaluacion prueba", policy, [host])
+    policy = get_policy()
+    
+    assets = get_assets()
+
+    test = evaluation("evaluacion prueba", policy, assets)
     result = test.evaluate_policy()
-    print (result)
+    #print (result)
     return result
 
 
 
+""" METODOS DE PRUEBA ELIMINAR AL PONER EN PRODUCCION Y HACER REFERENCIAS CORRESPONDIENTES """
+
+def get_policy():
+  policy = {
+    'policy_id': '00001', 
+    'name':'Politica des pruebas',
+    'OS' : 'Ubuntu Server',
+    'OS_version': '22.04 LTS',
+    'benchmark': [
+        {
+            'rule_id': "RP001",
+            'Name': "Nombre de la regla",
+            'Description': 'Regla de prueba para validar funcionamiento',
+            'test': 'dpkg -l | grep telnetd',
+            'type_of_finding': '',
+            'finding': '',
+            'severity': 'low',
+            'filepath': '',
+            'pattern' : ''
+        },
+        {
+            'rule_id': "RP002",
+            'Name': "Nombre de la regla",
+            'Description': 'Regla de prueba para validar funcionamiento',
+            'test': 'dpkg -l | grep rsh-server',
+            'type_of_finding': '',
+            'finding': '',
+            'severity': 'low',
+            'filepath': '',
+            'pattern' : ''
+        },
+        {
+            'rule_id': "RP003",
+            'Name': "Nombre de la regla",
+            'Description': 'Regla de prueba para validar funcionamiento',
+            'test': 'dpkg -l | grep ufw',
+            'type_of_finding': 'dpkginfo',
+            'finding': 'package ufw is installed',
+            'severity': 'low',
+            'filepath': '',
+            'pattern' : ''
+        },
+        {
+            'rule_id': "RP004",
+            'Name': "Nombre de la regla",
+            'Description': 'Regla de prueba para validar funcionamiento',
+            'test': 'dpkg -l | grep aide',
+            'type_of_finding': 'dpkginfo',
+            'finding': 'package aide is installed',
+            'severity': 'low',
+            'filepath': '',
+            'pattern' : ''
+        },
+        {
+            'rule_id': "RP005",
+            'Name': "Nombre de la regla",
+            'Description': 'Regla de prueba para validar funcionamiento',
+            'test': 'dpkg -l | grep rsyslog',
+            'type_of_finding': 'dpkginfo_object',
+            'finding': 'package rsyslgo is installed',
+            'severity': 'low',
+            'filepath': '',
+            'pattern' : ''
+        }
+        ]  
+    }
+  return policy    
 
 
+def get_assets (): 
+    assets = {
+        'hostname': 'ubuntu-server-1',
+        'host': '192.168.222.129', 
+        'OS': 'Ubuntu Server'
+    }
 
-
-        
+    return [assets]
 

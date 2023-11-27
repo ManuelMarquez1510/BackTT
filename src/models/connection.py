@@ -4,10 +4,11 @@
 
 #Bibliotecas
 import paramiko as pk
-import src.services.pam_interface as pam
+#import src.services.pam_interface as pam
 import socket
 import os
 import subprocess
+import pam_interface as pam
 
 class connection: 
 
@@ -102,13 +103,13 @@ class connection:
     @staticmethod
     def check_host_port(host, port=22):
         print (f'testing with {host} and port {port}')
-        status = 0
         try:
             socket.create_connection((host, port), timeout=5)
-            stutus = 1
-            print (f"El host {host} en el puerto {port} está activo.")
+            status = 1
+            #print (f"El host {host} en el puerto {port} está activo.")
         except (socket.timeout, socket.error):
-            print (f"El host {host} en el puerto {port} no está activo.")
+            #print (f"El host {host} en el puerto {port} no está activo.")
+            status = 0
         return status
 
 
@@ -132,19 +133,19 @@ class connection:
 
     """ METODOS EXPUESTOS AL INTERNAL API """
     @staticmethod
-    def init_connetion (host, user, password):
+    def init_connection (host, user, password):
         #Verificar estado del puerto con el host
         if not connection.check_host_port (host, port=22): 
-            return {'message' : f'Puerto o host no esta habilitado', 'Error': '1'} 
+            return {'message' : f'Puerto o host no esta habilitado', 'Error': 1} 
         
         result_tuple = connection.check_connection (host, user, password)
         hostname = result_tuple[1]
         if not result_tuple[0]:
-            return {'message' : f'Credenciales no validas', 'Error': '1'} 
+            return {'message' : f'Credenciales no validas', 'Error': 1} 
         
         pam.set_credentials(host, user, password)
 
-        return {'message' : f'{hostname}', 'Error': '0'}
+        return {'message' : f'Conexión exitosa con {hostname}', 'Error': 0}
 
         
 

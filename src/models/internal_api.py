@@ -33,8 +33,8 @@ Respuesta
 }
 """
 def init_connection (host, user, password):
-    return {'message' : f'OK', 'Error': '0'}
-    return connection.init_connection (host, user, password)
+    #return {'message' : f'OK', 'Error': '0'}
+    return connection.connection.init_connection(host, user, password)
 
 
 def evaluate_policy (): 
