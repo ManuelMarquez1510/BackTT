@@ -94,7 +94,7 @@ def create():
             cursor.execute(insert_rules)
 
         db.connection.commit()
-        return jsonify({'message': 'Política creada!'}), 201
+        return jsonify({'message': '¡Política creada!'}), 201
     except Exception as e:
         db.connection.rollback()  # Revertir cambios en caso de error
         return jsonify({'message': "Ocurrio un error al guardar la información",'error': str(e)}), 500

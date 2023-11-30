@@ -14,6 +14,7 @@ Documentar cada API con
 #Modulos requeridos
 import evaluation
 import connection
+from src.services.AssetsService import get_assets_by_group, get_assets_by_id
 
 
 
@@ -36,6 +37,15 @@ def init_connection (host, user, password):
     #return {'message' : f'OK', 'Error': '0'}
     return connection.connection.init_connection(host, user, password)
 
+def get_assets_by_group(group_id):
+    #return [{"group": "", "host": "", "name": "", "os": "", "password": "", "user": ""}, {...}, {...}, ...]
+    #return in error [{'message': '', 'Error': 1, 'err_description': ''}]
+    return get_assets_by_group(group_id)
+
+def get_assets_by_id(id_asset):
+    #return [{"group": "", "host": "", "name": "", "os": "", "password": "", "user": ""}]
+    #return in error [{'message': '', 'Error': 1, 'err_description': ''}]
+    return get_assets_by_id(id_asset)
 
 def evaluate_policy (): 
     next
