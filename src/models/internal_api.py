@@ -12,8 +12,10 @@ Documentar cada API con
 """
 
 #Modulos requeridos
-import evaluation
-import connection
+# import evaluation
+import src.models.evaluation as evaluation
+import src.models.connection as connection
+# import connection
 
 
 
@@ -33,7 +35,8 @@ Respuesta
 }
 """
 def init_connection (host, user, password):
-    #return {'message' : f'OK', 'Error': '0'}
+    # return {'host' : host, 'user': user, 'pass': password}
+    # return {'message' : f'OK', 'Error': '0'}
     return connection.connection.init_connection(host, user, password)
 
 

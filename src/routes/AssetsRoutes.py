@@ -1,5 +1,6 @@
 from flask import  Blueprint, jsonify, request
 from src.database.db_mysql import db, dataToJson
+from src.models.internal_api import init_connection
 main = Blueprint('assets_blueprint',__name__)
 
 @main.route('/', methods=['GET'])
@@ -43,48 +44,27 @@ def create():
         )
 
     """
-    sqlUser = f"""
-        INSERT INTO asset_credentials (user, password, host)
-        VALUES 
-        (
-            "{ body ['user'] }",
-            "{ body ['password']}",
-            "{ body ['host'] }"
-        )
-        """
+    resp=init_connection(body['host'], body['user'],body['password'])
+    print("resp: ", resp.get("Error"))
+    # sqlUser = f"""
+    #     INSERT INTO asset_credentials (user, password, host)
+    #     VALUES 
+    #     (
+    #         "{ body ['user'] }",
+    #         "{ body ['password']}",
+    #         "{ body ['host'] }"
+    #     )
+    #     """
     try:
-        cursor.execute(sql)
-        cursor.execute(sqlUser)
-        db.connection.commit()
-        return jsonify({'message': 'Activo creado!'}), 201
+        if False:
+            cursor.execute(sql)
+            db.connection.commit()
+            return jsonify({'message': 'Activo creado!'}), 201
+        else:
+            return jsonify({'message': 'Host invalido!'}), 201
+        
     except Exception as e:
         db.connection.rollback()  # Revertir cambios en caso de error
         return jsonify({'message': "Ocurrio un error al guardar la información",'error': str(e)}), 500
     finally:
         cursor.close()
-
-# @main.route('/createCredentials', methods=['POST'])
-# def createCredentials():
-#     cursor = db.connection.cursor()
-#     body = request.get_json()    
-
-#     sql = f"""
-#     INSERT INTO
-#         asset_credentials (user, host, password)
-#     VALUES
-#         (
-#             "{ body ['user'] }",
-#             "{ body ['host'] }",
-#             "{ body ['password']}",
-#         )
-#     """
-
-#     try:
-#         cursor.execute(sql)
-#         db.connection.commit()
-#         return jsonify({'message': 'usuario guardado!'}), 201
-#     except Exception as e:
-#         db.connection.rollback()  # Revertir cambios en caso de error
-#         return jsonify({'message': "Ocurrio un error al guardar la información",'error': str(e)}), 500
-#     finally:
-#         cursor.close()
