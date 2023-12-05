@@ -56,12 +56,13 @@ def create():
     #     )
     #     """
     try:
-        if False:
+        if resp.get("Error"==0):
             cursor.execute(sql)
             db.connection.commit()
-            return jsonify({'message': 'Activo creado!'}), 201
+            return jsonify({'message': 'Activo creado!', 'Error': '0'}), 201
         else:
-            return jsonify({'message': 'Host invalido!'}), 201
+            db.connection.rollback()  # Revertir cambios en caso de error
+            return jsonify({'message': '¡Host invalido!', 'Error': '1'}), 201
         
     except Exception as e:
         db.connection.rollback()  # Revertir cambios en caso de error
