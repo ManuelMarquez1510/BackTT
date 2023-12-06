@@ -100,3 +100,25 @@ def groupDetail(id):
     except Exception as e:
         db.connection.rollback()
         return jsonify({'message': "Ocurrió un error inesperado", 'error': str(e)}), 500
+
+@main.route('/getGroupById/<int:id>', methods=['GET'])
+def getGroupById(id):
+    cursor = db.connection.cursor()
+    sql = f"""SELECT
+        g.id as "key",
+        g.id,
+        g.name,
+        g.policy_id
+    FROM
+        `group` g
+        INNER JOIN policy p ON g.policy_id = p.id
+        INNER JOIN operative_system os ON p.operative_system_id = os.id
+    WHERE
+         os.id = {id}
+    ORDER by
+        g.name ASC
+    """
+    cursor.execute(sql)
+    result = cursor.fetchall()
+    data = dataToJson(cursor.description, result)
+    return jsonify(data), 200
