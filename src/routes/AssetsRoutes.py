@@ -58,7 +58,7 @@ def create():
     #     )
     #     """
     try:
-        if resp.get("Error"==0):
+        if (resp.get("Error")==0):
             cursor.execute(sql)
             db.connection.commit()
             return jsonify({'message': 'Activo creado!', 'Error': '0'}), 201
