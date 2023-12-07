@@ -1,5 +1,6 @@
 from flask import  Blueprint, jsonify, request
 from src.database.db_mysql import db, dataToJson
+from src.models.internal_api import init_connection
 main = Blueprint('assets_blueprint',__name__)
 
 @main.route('/', methods=['GET'])
@@ -45,20 +46,26 @@ def create():
         )
 
     """
-    sqlUser = f"""
-        INSERT INTO asset_credentials (user, password, host)
-        VALUES 
-        (
-            "{ body ['user'] }",
-            "{ body ['password']}",
-            "{ body ['host'] }"
-        )
-        """
+    resp=init_connection(body['host'], body['user'],body['password'])
+    print("resp: ", resp.get("Error"))
+    # sqlUser = f"""
+    #     INSERT INTO asset_credentials (user, password, host)
+    #     VALUES 
+    #     (
+    #         "{ body ['user'] }",
+    #         "{ body ['password']}",
+    #         "{ body ['host'] }"
+    #     )
+    #     """
     try:
-        cursor.execute(sql)
-        cursor.execute(sqlUser)
-        db.connection.commit()
-        return jsonify({'message': '¡Activo creado!'}), 201
+        if resp.get("Error"==0):
+            cursor.execute(sql)
+            db.connection.commit()
+            return jsonify({'message': 'Activo creado!', 'Error': '0'}), 201
+        else:
+            db.connection.rollback()  # Revertir cambios en caso de error
+            return jsonify({'message': '¡Host invalido!', 'Error': '1'}), 201
+        
     except Exception as e:
         db.connection.rollback()  # Revertir cambios en caso de error
         return jsonify({'message': "Ocurrio un error al guardar la información",'error': str(e)}), 500

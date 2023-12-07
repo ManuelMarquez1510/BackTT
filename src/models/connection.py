@@ -4,11 +4,11 @@
 
 #Bibliotecas
 import paramiko as pk
-#import src.services.pam_interface as pam
+import src.services.pam_interface as pam
 import socket
 import os
 import subprocess
-import pam_interface as pam
+# import pam_interface as pam
 
 class connection: 
 
