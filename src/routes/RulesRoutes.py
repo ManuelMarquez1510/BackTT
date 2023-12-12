@@ -1,4 +1,4 @@
-from flask import  Blueprint, jsonify, request
+from flask import  Blueprint, jsonify
 from src.database.db_mysql import db, dataToJson
 main = Blueprint('rules_blueprint',__name__)
 

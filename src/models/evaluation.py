@@ -1,7 +1,8 @@
 
 
 from datetime import datetime
-from connection import connection
+import src.models.connection as connection
+# from connection import connection
 import hashlib
 
 class evaluation: 

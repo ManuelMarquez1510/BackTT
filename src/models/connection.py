@@ -4,11 +4,11 @@
 
 #Bibliotecas
 import paramiko as pk
-#import src.services.pam_interface as pam
+import src.services.pam_interface as pam
 import socket
 import os
 import subprocess
-import pam_interface as pam
+# import pam_interface as pam
 
 class connection: 
 
@@ -138,7 +138,7 @@ class connection:
         if not connection.check_host_port (host, port): 
             return {'message' : f'Puerto o host no esta habilitado', 'Error': 1} 
         
-        result_tuple = connection.check_connection (host, user, password)
+        result_tuple = connection.check_connection (host, user, password, port)
         hostname = result_tuple[1]
         if not result_tuple[0]:
             return {'message' : f'Credenciales no validas', 'Error': 1} 

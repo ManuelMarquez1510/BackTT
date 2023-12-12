@@ -12,9 +12,11 @@ Documentar cada API con
 """
 
 #Modulos requeridos
-import evaluation
-import connection
 from src.services.AssetsService import get_assets_by_group, get_assets_by_id
+# import evaluation
+import src.models.evaluation as evaluation
+import src.models.connection as connection
+# import connection
 
 
 
@@ -33,9 +35,10 @@ Respuesta
     'error' : 1|0    
 }
 """
-def init_connection (host, user, password):
-    #return {'message' : f'OK', 'Error': '0'}
-    return connection.connection.init_connection(host, user, password)
+def init_connection (host, user, password, port=22):
+    # return {'host' : host, 'user': user, 'pass': password}
+    # return {'message' : f'OK', 'Error': '0'}
+    return connection.connection.init_connection(host, user, password, port)
 
 def get_assets_by_group(group_id):
     #return [{"group": "", "host": "", "name": "", "os": "", "password": "", "user": ""}, {...}, {...}, ...]
