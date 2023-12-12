@@ -133,9 +133,9 @@ class connection:
 
     """ METODOS EXPUESTOS AL INTERNAL API """
     @staticmethod
-    def init_connection (host, user, password):
+    def init_connection (host, user, password, port):
         #Verificar estado del puerto con el host
-        if not connection.check_host_port (host, port=22): 
+        if not connection.check_host_port (host, port): 
             return {'message' : f'Puerto o host no esta habilitado', 'Error': 1} 
         
         result_tuple = connection.check_connection (host, user, password)
