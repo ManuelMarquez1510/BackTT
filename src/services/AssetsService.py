@@ -8,6 +8,7 @@ def get_assets_by_group(id_group):
             SELECT
                 a.name,
                 a.host,
+                a.port,
                 os.name as os,
                 g.name as `group`,
                 ac.user,
@@ -40,6 +41,7 @@ def get_assets_by_id(id_asset):
             SELECT
                 a.name,
                 a.host,
+                a.port,
                 os.name as os,
                 g.name as `group`,
                 ac.user,

@@ -1,6 +1,7 @@
 
 from src.database.db_mysql import db, dataToJson
 
+
 data_test = [ 
     {'host' : '172.16.86.129', 'hostname':'ubuntudb', 'user' : 'dbadmin' ,'password':'root123', 'cert': '' },
     {'host' : '172.16.86.128', 'hostname':'windows 10', 'user' : 'admin' ,'password':'admin123', 'cert': '' }
@@ -10,10 +11,30 @@ data_test = [
 
 def get_credentials(host):
     """"Establecer conexion con base de datos o keyvault para obtener credenciales de host """
-    for dv in data_test:
-        if dv['host'] == host:
-            return (dv['user'], dv['password'])
-    return 0
+    try:
+        with db.connection.cursor() as cursor:
+
+            getAssets = """
+            SELECT
+                ac.host,
+                ac.user,
+                ac.password
+            FROM
+                asset_credentials ac
+            WHERE
+                ac.host = %s
+            """
+            
+            cursor.execute(getAssets,(host,))
+            result = cursor.fetchall()
+            data = dataToJson(cursor.description, result)
+
+        return {'status' : 'OK', 'data': data}
+
+    except Exception as e:
+        db.connection.rollback()
+        return {'message': "Ocurrió un error inesperado", 'Error': 1, 'err_description': str(e)}
+
 
 def set_credentials(host, user, password): 
     cursor = db.connection.cursor()
@@ -38,6 +59,8 @@ def set_credentials(host, user, password):
         cursor.close()
     
     return result
+
+
 
 def update_credentials(host, user, password):
     next

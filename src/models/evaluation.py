@@ -2,6 +2,7 @@
 
 from datetime import datetime
 import src.models.connection as connection
+#from src.models.internal_api import get_assets_by_group, get_assets_by_id
 # from connection import connection
 import hashlib
 
@@ -28,7 +29,7 @@ class evaluation:
         asset_name= []
         asset_ip = []
         for asset in self.assets:
-            asset_name.append(asset['hostname'])
+            #asset_name.append(asset['hostname'])
             asset_ip.append(asset['host'])
     
 
@@ -42,26 +43,30 @@ class evaluation:
             }
 
         for asset in self.assets:
-
-            as_connetion = connection(asset['host'])
+            print (asset)
+            as_connetion = connection.connection(asset['host'], asset['port'])
+            connetion_status = as_connetion.set_connection()
+            if connetion_status['status'] == 'ERROR': 
+                return as_connetion
             result_array =[]
             result_string=''
+            print ('INICIA EVALUACIÓN')
             for rule in self.policy['benchmark']:
                 result = as_connetion.send_command(f"{rule['test']}")
                 result_array.append(result)
                 result_string = result_string + f"{result},"
             as_connetion.close_connection()
-            
+            print ('CONEXION CERRADA')
             result_hash=hashlib.sha256(result_string.encode('utf-8')).hexdigest()
             
-            evaluation_result[f'{asset["hostname"]}'] = {'hash_result': result_hash, 'string_result' : result_string, 'array_result': result_array}
+            evaluation_result[f'{asset["host"]}'] = {'hash_result': result_hash, 'string_result' : result_string, 'array_result': result_array}
 
         self.result = evaluation_result
 
         #evaluation.evaluate_result()
         
-        return (evaluation_result)
-    
+        return {'status' : 'OK', 'data': evaluation_result }
+        
 
     def evaluate_result (self): 
         windows_list = ['Windows Server', 'Windows 10']
@@ -88,17 +93,18 @@ class evaluation:
     
 """ METODOS EXPUESTOS AL INTERNAL API """
 @staticmethod
-def evaluate_host (host): 
+def evaluate_assets (assets): 
 
-    policy = get_policy()
+    print (assets)
+    if not len(assets): 
+        return "{'status': 'ERROR', 'msg': 'No se encontraron activos'}"
     
-    assets = get_assets()
+    policy = get_policy()
 
-    test = evaluation("evaluacion prueba", policy, assets)
-    result = test.evaluate_policy()
-    #print (result)
+    evl = evaluation("evaluacion prueba", policy, assets)
+    result = evl.evaluate_policy()
+    print (result)
     return result
-
 
 
 """ METODOS DE PRUEBA ELIMINAR AL PONER EN PRODUCCION Y HACER REFERENCIAS CORRESPONDIENTES """
@@ -168,14 +174,4 @@ def get_policy():
         ]  
     }
   return policy    
-
-
-def get_assets (): 
-    assets = {
-        'hostname': 'ubuntu-server-1',
-        'host': '192.168.222.129', 
-        'OS': 'Ubuntu Server'
-    }
-
-    return [assets]
 

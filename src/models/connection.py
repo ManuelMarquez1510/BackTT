@@ -12,37 +12,40 @@ import subprocess
 
 class connection: 
 
-    def __init__(self, host) -> None:
+    def __init__(self, host, port) -> None:
         self.host = host
+        self.port = port
         self.client = pk.client.SSHClient()
-        self.__set_connection()
+        #self.__set_connection()
         
 
-    def __set_connection (self): 
+    def set_connection (self): 
         self.client.set_missing_host_key_policy(pk.AutoAddPolicy())
+        
         credentials = pam.get_credentials(self.host)
-        if isinstance (credentials, tuple):   
-            self.client.connect(self.host, username= credentials[0], password= credentials[1])
+        print (credentials)
+        if credentials['status'] == 'OK':   
+            credentials = credentials['data'][0]
+            
+            self.client.connect(self.host, username= credentials['user'], password= credentials['password'], port= self.port)
+            print ('CONEXIÓN ESTABLECIDA')
             del credentials
+            return {'status': 'OK', 'msg': 'Credenciales no identificadas'}
         else:
-            """LOG: CREDENCIALES NO IDENTIFICADAS """
-            print("Credenciales no identificadas")
             self.client.close()
-            return 0
+            return {'status': 'ERROR', 'msg': 'Credenciales no identificadas'}
     
 
     def close_connection (self):
         self.client.close()
 
     def send_command(self,comando):
-        #_stdin, _stdout,_stderr = self.client.exec_command("dpkg -l | grep ftp")
         _stdin, _stdout,_stderr = self.client.exec_command(comando)
         return (_stdout.read().decode()) 
     
     def get_evaluation_file (self, evaluation, filename): 
         sftp = self.client.open_sftp()
 
-        #Pasarlo a un FS
         path = os.path.join(".",evaluation)
         os.makedirs(path, exist_ok=True)
 
@@ -52,8 +55,10 @@ class connection:
         self.send_command(f"rm {filename}")
     
 
+
+
     @staticmethod
-    def test_connection(host, port=22):
+    def test_connection(host, port):
         client = pk.client.SSHClient()
         client.set_missing_host_key_policy(pk.AutoAddPolicy())
         credentials = pam.get_credentials(host)
@@ -79,7 +84,7 @@ class connection:
 
 
     @staticmethod
-    def check_connection(host, user, password, port=22):
+    def check_connection(host, user, password, port):
         client = pk.client.SSHClient()
         client.set_missing_host_key_policy(pk.AutoAddPolicy())
         status = 0
@@ -101,7 +106,7 @@ class connection:
         return (status,hostname)
 
     @staticmethod
-    def check_host_port(host, port=22):
+    def check_host_port(host, port):
         print (f'testing with {host} and port {port}')
         try:
             socket.create_connection((host, port), timeout=5)
@@ -131,6 +136,9 @@ class connection:
             print(f"Se agotó el tiempo de espera para el ping al host {host}.")
 
 
+
+
+
     """ METODOS EXPUESTOS AL INTERNAL API """
     @staticmethod
     def init_connection (host, user, password, port):
@@ -148,5 +156,4 @@ class connection:
         return {'message' : f'Conexión exitosa con {hostname}', 'Error': 0}
 
         
-
 
