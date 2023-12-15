@@ -54,16 +54,18 @@ def groupDetail(id):
         with db.connection.cursor() as cursor:
 
             getDetail = """
-            SELECT
+            SELECT distinct
                 g.id,
                 g.name as group_name,
                 g.policy_id,
                 p.name as policy,
-                COUNT(a.id) as assets_quantity,
+                COUNT(DISTINCT a.id) as assets_quantity,
+                COUNT(DISTINCT pr.id) as rules_quantity,
                 os.name as operative_system
             FROM
                 `group` g
                 INNER JOIN policy p ON p.id = g.policy_id
+                INNER JOIN policy_rule pr ON pr.policy_id = p.id
                 LEFT JOIN asset a ON a.group_id = g.id
                 INNER JOIN operative_system os ON os.id = p.operative_system_id
             WHERE
