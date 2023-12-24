@@ -6,22 +6,26 @@ main = Blueprint('assets_blueprint',__name__)
 @main.route('/', methods=['GET'])
 def getAll():
     cursor = db.connection.cursor()
-    sql = """SELECT
-        a.id as "key",
-        a.id,
-        a.name,
-        a.host,
-        a.status,
-        a.last_modified_date,
-        a.operative_system_id,
-        os.name as operative_system
-    FROM
-        asset a
-        inner join operative_system os on os.id = a.operative_system_id
-    WHERE
-        a.enabled = true
-    ORDER by
-        a.last_modified_date DESC
+    sql = """
+   SELECT
+    a.id as "key",
+    a.id,
+    a.name,
+    a.host,
+    a.status,
+    a.last_modified_date,
+    a.operative_system_id,
+    os.name as operative_system,
+    g.name as group_name
+FROM
+    asset a
+    INNER JOIN operative_system os ON os.id = a.operative_system_id
+    LEFT JOIN `group` g ON a.group_id = g.id
+WHERE
+    a.enabled = true
+ORDER BY
+    a.last_modified_date DESC;
+
     """
     cursor.execute(sql)
     result = cursor.fetchall()
@@ -32,7 +36,8 @@ def getAll():
 def create():
     cursor = db.connection.cursor()
     body = request.get_json() 
-    print(body)   
+    port_value = f'{body["port"]}' if "port" in body and body["port"] else "undefined"
+    # print(body)   
     sql = f"""
     INSERT INTO
         asset (name, host, status, operative_system_id, group_id)
@@ -46,7 +51,10 @@ def create():
         )
 
     """
-    resp=init_connection(body['host'], body['user'],body['password'])
+    if (port_value == "undefined"):
+        resp=init_connection(body['host'], body['user'],body['password'])
+    else: 
+        resp=init_connection(body['host'], body['user'],body['password'], port_value)
     print("resp: ", resp.get("Error"))
     # sqlUser = f"""
     #     INSERT INTO asset_credentials (user, password, host)
