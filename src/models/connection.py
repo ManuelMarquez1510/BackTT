@@ -23,7 +23,7 @@ class connection:
         self.client.set_missing_host_key_policy(pk.AutoAddPolicy())
         
         credentials = pam.get_credentials(self.host)
-        print (credentials)
+        #print (credentials)
         if credentials['status'] == 'OK':   
             credentials = credentials['data'][0]
             

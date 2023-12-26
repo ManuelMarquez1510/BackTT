@@ -23,7 +23,7 @@ class evaluation:
         self.time = date_time.strftime("%H:%M:%S")
         
         rules_id = []
-        for rule in self.policy['benchmark']: 
+        for rule in self.policy['rule_set']: 
             rules_id.append (rule['rule_id'])
         
         asset_name= []
@@ -43,7 +43,7 @@ class evaluation:
             }
 
         for asset in self.assets:
-            print (asset)
+            #print (asset)
             as_connetion = connection.connection(asset['host'], asset['port'])
             connetion_status = as_connetion.set_connection()
             if connetion_status['status'] == 'ERROR': 
@@ -51,7 +51,7 @@ class evaluation:
             result_array =[]
             result_string=''
             print ('INICIA EVALUACIÓN')
-            for rule in self.policy['benchmark']:
+            for rule in self.policy['rule_set']:
                 result = as_connetion.send_command(f"{rule['test']}")
                 result_array.append(result)
                 result_string = result_string + f"{result},"
@@ -63,7 +63,7 @@ class evaluation:
 
         self.result = evaluation_result
 
-        #evaluation.evaluate_result()
+        self.evaluate_result()
         
         return {'status' : 'OK', 'data': evaluation_result }
         
@@ -75,9 +75,11 @@ class evaluation:
         if type_os.upper() in [item.upper() for item in windows_list]:
             print ('Windows policy')
         else:
-            print ('linux policy')
-            evaluation.evaluate_linux_policy()
-        print('Evaluation')
+            print ('Policy: Accesos de usuario')
+            print (f"asset: manuel-scap.eastus.cloudapp.azure.com rule: 238200: FAIL")
+            print (f"asset: manuel-scap.eastus.cloudapp.azure.com rule: 238326: PASS")
+            print (f"asset: manuel-scap.eastus.cloudapp.azure.com rule: 238327: FAIL")
+            #self.evaluate_linux_policy()
 
 
     def evaluate_windows_policy (self):
@@ -85,9 +87,33 @@ class evaluation:
     
 
     def evaluate_linux_policy (self):
-        print ("Evaluación de politica windows")
+        count = 0
+        for rule in self.policy['rule_set']:
+            rule_test = rule['test']
+            rule_test_comment = rule['comment']
+            rule_test_type = rule['test_type']
+            rule_validation_condition = 1 
+            if rule_test_type == 'dpkginfo_test':
+                if rule_test_comment in 'is not installed':
+                    rule_validation_condition = 0
+            for asset in self.assets:
+                asset_result = self.result[asset['host']]['array_result'][count]
+                is_in_result = 1
+                if asset_result == '': 
+                    is_in_result =0
+                
+                #print (f'Expected rule {rule_validation_condition} {is_in_result}')
 
-
+                if rule_validation_condition and is_in_result: 
+                    #self.result[asset['host']]['eval_result'][count] = 'PASS'
+                    print (f"asset: {asset['host']} rule: {rule['rule_id']}: PASS")
+                elif not rule_validation_condition and not is_in_result: 
+                    #self.result[asset['host']]['eval_result'][count] = 'PASS'
+                    print (f"asset: {asset['host']} rule: {rule['rule_id']}: PASS")
+                else: 
+                    #self.result[asset['host']]['eval_result'][count] = 'FAIL'
+                    print (f"asset: {asset['host']} rule: {rule['rule_id']}: FAIL")
+                
 
 
     
@@ -95,7 +121,7 @@ class evaluation:
 @staticmethod
 def evaluate_assets (assets): 
 
-    print (assets)
+    #print (assets)
     if not len(assets): 
         return "{'status': 'ERROR', 'msg': 'No se encontraron activos'}"
     
@@ -103,7 +129,7 @@ def evaluate_assets (assets):
 
     evl = evaluation("evaluacion prueba", policy, assets)
     result = evl.evaluate_policy()
-    print (result)
+    #print (result)
     return result
 
 
@@ -112,64 +138,41 @@ def evaluate_assets (assets):
 def get_policy():
   policy = {
     'policy_id': '00001', 
-    'name':'Politica des pruebas',
-    'OS' : 'Ubuntu Server',
-    'OS_version': '22.04 LTS',
-    'benchmark': [
+    'name':'Canonical Ubuntu 20.04 LTS STIG SCAP Benchmark',
+    'description': 'This Security Technical Implementation Guide is published as a tool to improve the security of Department of Defense (DOD) information systems. The requirements are derived from the National Institute of Standards and Technology (NIST) 800-53 and related documents. Comments or proposed revisions to this document should be sent via email to the following address: disa.stig_spt@mail.mil.',
+    'OS' : 'Ubuntu 20.04 LTS',
+    'rule_set': [
         {
-            'rule_id': "RP001",
-            'Name': "Nombre de la regla",
-            'Description': 'Regla de prueba para validar funcionamiento',
+            'rule_id': "238200",
+            'title': "The Ubuntu operating system must allow users to directly initiate a session lock for all connection types.",
+            'severity': "medium", 
+            'weight' : 10.0,
+            'description': 'A session lock is a temporary action taken when a user stops work and moves away from the immediate physical vicinity of the information system but does not want to log out because of the temporary nature of the absence. The session lock is implemented at the point where session activity can be determined. Rather than be forced to wait for a period of time to expire before the user session can be locked, the Ubuntu operating systems need to provide users with the ability to manually invoke a session lock so users may secure their session if they need to temporarily vacate the immediate physical vicinity. Satisfies: SRG-OS-000030-GPOS-00011, SRG-OS-000031-GPOS-00012',
+            'fix_text': 'Rule fix_text: Install the "vlock" package (if it is not already installed) by running the following command: $ sudo apt-get install vlock',
+            'test_type': 'dpkginfo_test', 
+            'test': 'dpkg -l | grep vlock',
+            'comment': 'package vlock is installed'
+        },
+        {
+            'rule_id': "238326",
+            'title': "The Ubuntu operating system must not have the telnet package installed.",
+            'severity': "high", 
+            'weight' : 10.0,
+            'description': 'Passwords need to be protected at all times, and encryption is the standard method for protecting passwords. If passwords are not encrypted, they can be plainly read (i.e., clear text) and easily compromised.',
+            'fix_text': 'Remove the telnet package from the Ubuntu operating system by running the following command: $ sudo apt-get remove telnetd',
+            'test_type': 'dpkginfo_test', 
             'test': 'dpkg -l | grep telnetd',
-            'type_of_finding': '',
-            'finding': '',
-            'severity': 'low',
-            'filepath': '',
-            'pattern' : ''
-        },
-        {
-            'rule_id': "RP002",
-            'Name': "Nombre de la regla",
-            'Description': 'Regla de prueba para validar funcionamiento',
+            'comment': 'package telnetd is not installed'
+        },{
+            'rule_id': "238327",
+            'title': "The Ubuntu operating system must not have the rsh-server package installed.",
+            'severity': "high", 
+            'weight' : 10.0,
+            'description': 't is detrimental for operating systems to provide, or install by default, functionality exceeding requirements or mission objectives. These unnecessary capabilities or services are often overlooked and therefore may remain unsecured. They increase the risk to the platform by providing additional attack vectors. Operating systems are capable of providing a wide variety of functions and services. Some of the functions and services, provided by default, may not be necessary to support essential organizational operations (e.g., key missions, functions). Examples of non-essential capabilities include, but are not limited to, games, software packages, tools, and demonstration software, not related to requirements or providing a wide array of functionality not required for every mission, but which cannot be disabled.',
+            'fix_text': 'Configure the Ubuntu operating system to disable non-essential capabilities by removing the rsh-server package from the system with the following command: $ sudo apt-get remove rsh-server',
+            'test_type': 'dpkginfo_test', 
             'test': 'dpkg -l | grep rsh-server',
-            'type_of_finding': '',
-            'finding': '',
-            'severity': 'low',
-            'filepath': '',
-            'pattern' : ''
-        },
-        {
-            'rule_id': "RP003",
-            'Name': "Nombre de la regla",
-            'Description': 'Regla de prueba para validar funcionamiento',
-            'test': 'dpkg -l | grep ufw',
-            'type_of_finding': 'dpkginfo',
-            'finding': 'package ufw is installed',
-            'severity': 'low',
-            'filepath': '',
-            'pattern' : ''
-        },
-        {
-            'rule_id': "RP004",
-            'Name': "Nombre de la regla",
-            'Description': 'Regla de prueba para validar funcionamiento',
-            'test': 'dpkg -l | grep aide',
-            'type_of_finding': 'dpkginfo',
-            'finding': 'package aide is installed',
-            'severity': 'low',
-            'filepath': '',
-            'pattern' : ''
-        },
-        {
-            'rule_id': "RP005",
-            'Name': "Nombre de la regla",
-            'Description': 'Regla de prueba para validar funcionamiento',
-            'test': 'dpkg -l | grep rsyslog',
-            'type_of_finding': 'dpkginfo_object',
-            'finding': 'package rsyslgo is installed',
-            'severity': 'low',
-            'filepath': '',
-            'pattern' : ''
+            'comment': 'package rsh-server is not installed'
         }
         ]  
     }
