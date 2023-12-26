@@ -100,3 +100,21 @@ def create():
         return jsonify({'message': "Ocurrio un error al guardar la información",'error': str(e)}), 500
     finally:
         cursor.close()
+
+@main.route('/<int:id>', methods=['DELETE'])
+def delete(id):
+    try:
+        with db.connection.cursor() as cursor:
+            deleteQuery = """
+            DELETE FROM policy p WHERE p.id = %s
+            """
+            cursor.execute(deleteQuery, (id,))
+        
+        # Commit de la transacción
+        db.connection.commit()
+
+        return jsonify({'message': 'Política eliminada'}), 200
+
+    except Exception as e:
+        db.connection.rollback()
+        return jsonify({'message': "Ocurrió un error inesperado", 'error': str(e)}), 500

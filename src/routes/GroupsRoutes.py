@@ -103,8 +103,8 @@ def groupDetail(id):
         db.connection.rollback()
         return jsonify({'message': "Ocurrió un error inesperado", 'error': str(e)}), 500
 
-@main.route('/getGroupById/<int:id>', methods=['GET'])
-def getGroupById(id):
+@main.route('/getGroupsByOS/<int:id>', methods=['GET'])
+def getGroupsByOS(id):
     cursor = db.connection.cursor()
     sql = f"""SELECT
         g.id as "key",
@@ -124,3 +124,42 @@ def getGroupById(id):
     result = cursor.fetchall()
     data = dataToJson(cursor.description, result)
     return jsonify(data), 200
+
+@main.route('/getGroupDetailsByAsset/<int:id>', methods=['GET'])
+def getGroupDetailsByAsset(id):
+    print(id)
+    try:
+        with db.connection.cursor() as cursor:
+
+            getDetail = """
+            SELECT distinct
+                g.id,
+                g.name as group_name,
+                g.policy_id,
+                p.name as policy,
+                COUNT(DISTINCT a.id) as assets_quantity,
+                COUNT(DISTINCT pr.id) as rules_quantity,
+                os.name as operative_system
+            FROM
+                `group` g
+                INNER JOIN policy p ON p.id = g.policy_id
+                INNER JOIN policy_rule pr ON pr.policy_id = p.id
+                LEFT JOIN asset a ON a.group_id = g.id
+                INNER JOIN operative_system os ON os.id = p.operative_system_id
+            WHERE
+                g.enabled = true
+                AND a.id = %s
+            LIMIT
+                1;
+            """
+
+            cursor.execute(getDetail, (id,))
+            result = cursor.fetchall()
+            data = dataToJson(cursor.description, result)[0]
+
+        return jsonify(data), 200
+
+    
+    except Exception as e:
+        db.connection.rollback()
+        return jsonify({'message': "Ocurrió un error inesperado", 'error': str(e)}), 500

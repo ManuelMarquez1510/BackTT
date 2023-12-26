@@ -69,7 +69,7 @@ def create():
         if (resp.get("Error")==0):
             cursor.execute(sql)
             db.connection.commit()
-            return jsonify({'message': 'Activo creado!', 'Error': '0'}), 201
+            return jsonify({'message': '¡Activo creado!', 'Error': '0'}), 201
         else:
             db.connection.rollback()  # Revertir cambios en caso de error
             return jsonify({'message': '¡Host invalido!', 'Error': '1'}), 201
@@ -79,3 +79,21 @@ def create():
         return jsonify({'message': "Ocurrio un error al guardar la información",'error': str(e)}), 500
     finally:
         cursor.close()
+
+@main.route('/<int:id>', methods=['DELETE'])
+def delete(id):
+    try:
+        with db.connection.cursor() as cursor:
+            deleteQuery = """
+            DELETE FROM asset a WHERE a.id = %s
+            """
+            cursor.execute(deleteQuery, (id,))
+        
+        # Commit de la transacción
+        db.connection.commit()
+
+        return jsonify({'message': '¡Activo eliminado!'}), 200
+
+    except Exception as e:
+        db.connection.rollback()
+        return jsonify({'message': "Ocurrió un error inesperado", 'error': str(e)}), 500
