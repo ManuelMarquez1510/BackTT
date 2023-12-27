@@ -40,6 +40,7 @@ class connection:
         self.client.close()
 
     def send_command(self,comando):
+        #print (f"COMMAND: {comando}")
         _stdin, _stdout,_stderr = self.client.exec_command(comando)
         return (_stdout.read().decode()) 
     

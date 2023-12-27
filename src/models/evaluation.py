@@ -38,8 +38,8 @@ class evaluation:
             'policy' : self.policy['name'],
             'date' : self.date,
             'time' : self.time,
-            'assets' : {'host': asset_ip},
-            'rules_id' : rules_id
+            'assets' : asset_ip,
+            'rule_set' : rules_id
             }
 
         for asset in self.assets:
@@ -59,7 +59,7 @@ class evaluation:
             print ('CONEXION CERRADA')
             result_hash=hashlib.sha256(result_string.encode('utf-8')).hexdigest()
             
-            evaluation_result[f'{asset["host"]}'] = {'hash_result': result_hash, 'string_result' : result_string, 'array_result': result_array}
+            evaluation_result[f'{asset["host"]}'] = {'hash_result': result_hash, 'string_result' : result_string, 'array_result': result_array,'evaluation_result': [], 'status': 'PASS', 'avg': 0 }
 
         self.result = evaluation_result
 
@@ -75,11 +75,20 @@ class evaluation:
         if type_os.upper() in [item.upper() for item in windows_list]:
             print ('Windows policy')
         else:
-            print ('Policy: Accesos de usuario')
-            print (f"asset: manuel-scap.eastus.cloudapp.azure.com rule: 238200: FAIL")
-            print (f"asset: manuel-scap.eastus.cloudapp.azure.com rule: 238326: PASS")
-            print (f"asset: manuel-scap.eastus.cloudapp.azure.com rule: 238327: FAIL")
-            #self.evaluate_linux_policy()
+            print ('Evlaluacion politica: Linux')
+            self.evaluate_linux_policy()
+        
+        num_rules = len(self.policy['rule_set'])
+        for asset in self.assets: 
+            num_fails = (self.result[asset]['evaluation_result']).count('FAIL')
+            self.result[asset]['avg'] = 100 - (num_fails*100)/num_rules
+            if num_fails > 0:  
+                self.result[asset]['status'] = 'FAIL'
+
+
+        avg = len(self.policy['assets'])
+
+
 
 
     def evaluate_windows_policy (self):
@@ -92,30 +101,58 @@ class evaluation:
             rule_test = rule['test']
             rule_test_comment = rule['comment']
             rule_test_type = rule['test_type']
+
+            #print (f"\nrule: {rule['rule_id']}-{rule_test_comment}")
             rule_validation_condition = 1 
-            if rule_test_type == 'dpkginfo_test':
-                if rule_test_comment in 'is not installed':
-                    rule_validation_condition = 0
-            for asset in self.assets:
-                asset_result = self.result[asset['host']]['array_result'][count]
-                is_in_result = 1
-                if asset_result == '': 
-                    is_in_result =0
+            if rule_test_type == 'dpkginfo_test': 
+                self.dpkginfo_test(rule_test_comment,count)
+
+            count= count + 1
+        
+
+    def dpkginfo_test(self,rule_test_comment,count):
+        rule_validation_condition = 1
+        if 'is not installed' in rule_test_comment :
+            rule_validation_condition = 0
+        for asset in self.assets:
+            asset_result = self.result[asset['host']]['array_result'][count]
+            is_in_result = 1
+            if asset_result == '': 
+                is_in_result =0
+            
+            if rule_validation_condition and is_in_result: 
+                self.result[asset['host']]['evaluation_result'].append('PASS')
+                #print (f"asset: {asset['host']} rule: {rule['rule_id']}-{rule_test_comment} STATUS: PASS")
+                #print (f"asset: {asset['host']} result: {asset_result} status: PASS")
+            elif not rule_validation_condition and not is_in_result: 
+                self.result[asset['host']]['evaluation_result'].append('PASS')
+                #print (f"asset: {asset['host']} rule: {rule['rule_id']}-{rule_test_comment} STATUS: PASS")
+                #print (f"asset: {asset['host']} result: {asset_result} status: PASS")
+            else: 
+                self.result[asset['host']]['evaluation_result'].append('FAIL')
+                #print (f"asset: {asset['host']} rule: {rule['rule_id']}-{rule_test_comment} STATUS: FAIL")
+                #print (f"asset: {asset['host']} result: {asset_result} status: FAIL")
+
+
                 
-                #print (f'Expected rule {rule_validation_condition} {is_in_result}')
 
-                if rule_validation_condition and is_in_result: 
-                    #self.result[asset['host']]['eval_result'][count] = 'PASS'
-                    print (f"asset: {asset['host']} rule: {rule['rule_id']}: PASS")
-                elif not rule_validation_condition and not is_in_result: 
-                    #self.result[asset['host']]['eval_result'][count] = 'PASS'
-                    print (f"asset: {asset['host']} rule: {rule['rule_id']}: PASS")
-                else: 
-                    #self.result[asset['host']]['eval_result'][count] = 'FAIL'
-                    print (f"asset: {asset['host']} rule: {rule['rule_id']}: FAIL")
-                
-
-
+@staticmethod
+def print_evaluation_result (result):
+    assets = result['data']['assets']
+    print (f"""
+    Nombre de evaluacion: {result['data']['name']}
+    Politica evaluada: {result['data']['policy']}
+    Fecha: {result['data']['date']} hora: {result['data']['time']}
+    Activos evaluados: {" ".join(map(str, assets))}
+    Resultados: """)
+    for asset in assets: 
+        print (f"\tActivo: {asset}")
+        print (f"\tHash: {result['data'][asset]['hash_result']}")
+        print (f"\tEstatus: {result['data'][asset]['status']} - {result['data'][asset]['avg']}% de cumplimiento")
+        for index in range (len( result['data']['rule_set'])):
+            print (f"\tRule id: {result['data']['rule_set'][index]} - {result['data'][asset]['evaluation_result'][index]}")
+    
+    
     
 """ METODOS EXPUESTOS AL INTERNAL API """
 @staticmethod
@@ -129,7 +166,8 @@ def evaluate_assets (assets):
 
     evl = evaluation("evaluacion prueba", policy, assets)
     result = evl.evaluate_policy()
-    #print (result)
+    print ( result)
+    print_evaluation_result(result)
     return result
 
 
@@ -178,3 +216,32 @@ def get_policy():
     }
   return policy    
 
+
+
+
+""" 
+'data': {
+    'name': 'evaluacion prueba', 
+    'policy': 'Canonical Ubuntu 20.04 LTS STIG SCAP Benchmark', 
+    'date': '26-12-23', 'time': '16:15:48', 
+    'assets': {'host': ['192.168.3.55']}, 
+    'rules_id': ['238200', '238326', '238327'], 
+    'policy_status' : PASS|FAIL,
+    'policy_avg' : 0 
+    '192.168.3.55': {
+        'hash_result': 'b0f8fd8fd26179f77e373926e21ae518fd359eb90a47f4d5d63efcaec105d901', 
+        'string_result': 'ii  vlock                                 2.2.2-8                           amd64        Virtual Console locking program\n,ii  telnetd                               0.17-41.2build1                   amd64        basic telnet server\n,,',
+        'array_result': ['ii  vlock                                 2.2.2-8                           amd64        Virtual Console locking program\n', 'ii  telnetd                               0.17-41.2build1                   amd64        basic telnet server\n', ''],
+        'evaluation_result': [],
+        'status': 'FAIL',
+        'avg': 0
+    }
+    '192.168.3.xx' : {
+        'hash_result': 
+    }
+    }}
+
+
+
+
+ """
