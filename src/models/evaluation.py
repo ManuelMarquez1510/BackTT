@@ -38,6 +38,8 @@ class evaluation:
             'policy' : self.policy['name'],
             'date' : self.date,
             'time' : self.time,
+            'policy_status': 'PASS',
+            'policy_avg': 100,
             'assets' : asset_ip,
             'rule_set' : rules_id
             }
@@ -79,14 +81,17 @@ class evaluation:
             self.evaluate_linux_policy()
         
         num_rules = len(self.policy['rule_set'])
-        for asset in self.assets: 
+        hosts_fails= 0
+        for asset in self.result['assets']: 
             num_fails = (self.result[asset]['evaluation_result']).count('FAIL')
-            self.result[asset]['avg'] = 100 - (num_fails*100)/num_rules
+            self.result[asset]['avg'] = round( 100 - (num_fails*100)/num_rules, 2)
             if num_fails > 0:  
                 self.result[asset]['status'] = 'FAIL'
-
-
-        avg = len(self.policy['assets'])
+                hosts_fails = hosts_fails + 1
+        
+        if hosts_fails > 0: 
+            self.result['policy_status'] = 'FAIL' 
+        self.result['policy_avg'] = round( 100 - (hosts_fails*100)/len(self.result['assets']), 2)
 
 
 
@@ -144,6 +149,7 @@ def print_evaluation_result (result):
     Politica evaluada: {result['data']['policy']}
     Fecha: {result['data']['date']} hora: {result['data']['time']}
     Activos evaluados: {" ".join(map(str, assets))}
+    Estatus de la evaluación: {result['data']['policy_status']} - {result['data']['policy_avg']}% host
     Resultados: """)
     for asset in assets: 
         print (f"\tActivo: {asset}")
