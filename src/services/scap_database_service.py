@@ -51,7 +51,7 @@ def get_policy (policy_id):
         return [{'message': "Ocurrió un error inesperado", 'Error': 1, 'err_description': str(e)}]
     
 
-def save_evaluation_result (assets, result) : 
+def save_evaluation_result (assets, result, policy_id) : 
     #print ("Save into DB ", assets)
     result = result['data']
     #print (result)
@@ -74,7 +74,7 @@ def save_evaluation_result (assets, result) :
             #print (f"PoC {result[asset]['avg']}")
             #print (pass_num)
 
-            insert_query = "INSERT INTO diagnosis (asset_id, percentage_of_compliance, completed, result, ext_data ) VALUES (%s, %s, %s, %s, %s)"
+            insert_query = "INSERT INTO diagnosis (asset_id, percentage_of_compliance, completed, result, ext_data, policy_id ) VALUES (%s, %s, %s, %s, %s, %s)"
             
             data_to_insert = (
                 asset_aux['asset_id'],
@@ -82,6 +82,7 @@ def save_evaluation_result (assets, result) :
                 pass_num,
                 json.dumps(aux_result),
                 json.dumps(result[asset]["validation_result"]),
+                policy_id
             )
             cursor.execute(insert_query, data_to_insert)
         db.connection.commit()

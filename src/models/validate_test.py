@@ -1,9 +1,10 @@
 def print_rule (rule): 
-    print (f"Rule ID: {rule['rule_id']}")
+
+    print (f"\n\nRule ID: {rule['rule_id']}")
     print (f"Titulo: {rule['title']}")
     test_number =1
     for test in rule["tests"]: #Tests
-      print (f"\tTest {test_number}")
+      print (f"\n\tTest {test_number}")
       print(f"\tTest type: {test['test_type']}")
       print(f"\tTest comment: {test['test_comment']}")
       print(f"\tTest state: {test['state']}")
@@ -28,4 +29,7 @@ def dpkginfo_test(result, rule_test_comment):
     if 'is not installed' in rule_test_comment :
         is_expected = False
     return is_expected == is_in_result
-    
+
+
+def textfilecontent54_test(result): 
+    next

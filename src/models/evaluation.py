@@ -8,6 +8,7 @@ import src.models.validate_test as test_helper
 from src.services.scap_database_service import get_rules, get_policy, save_evaluation_result
 import hashlib
 
+DEBUG_MODE = False
 class evaluation: 
 
     def __init__ (self, name, policy, assets, rules) -> None: 
@@ -67,8 +68,8 @@ class evaluation:
                         array_aux = []
                         for command in test['tests_dictionary']:
                             result = as_connetion.send_command(f"{command['test']}")
-                            print (f"\tRegla {rule['rule_id']} comando enviado {command['test']}")
-                            print (f"\tRespuesta obtenida: {result}")
+                            print (f"\tRegla {rule['rule_id']} comando enviado {command['test']}") if DEBUG_MODE else next
+                            print (f"\tRespuesta obtenida: {result}") if DEBUG_MODE else next
                             array_aux.append(result)
                         test_array_aux.append(array_aux)
                     host_result[rule["rule_id"]] = test_array_aux
@@ -134,6 +135,7 @@ class evaluation:
             total_proof = 0
             fails = 0
             pass_s = 0
+            test_helper.print_rule(rule)
             for test in rule['tests']:
                 test_type = test['test_type']
                 comment = test['test_comment']
@@ -144,7 +146,7 @@ class evaluation:
                         result = test_helper.dpkginfo_test (evaluation_result[test_count][proof_counts], comment)
                     
                     elif test_type == 'textfilecontent54_test': 
-                        #print (rule)
+                        #result = test_helper.textfilecontent54_test (evaluation_result[test_count][proof_counts], test, comment)
                         next
                     if result:
                         pass_s = pass_s+1
@@ -199,16 +201,16 @@ def print_evaluation_result (result):
     Estatus de la evaluación: {result['data']['policy_status']} - {result['data']['policy_avg']}% host
     Resultados: """
     print (result_str)
-
-    for asset in assets: 
-        print (f"\tActivo: {asset}")
-        print (f"\tHash: {result['data'][asset]['hash_result']}")
-        print (f"\tEvaluado: {result['data'][asset]['done']}")
-        if not (result['data'][asset]['validation_result'] == {}): 
-            print (f"\tEstatus: {result['data'][asset]['status']} - {result['data'][asset]['validation_result']['pass']}/{len(result['data']['rule_set'])} : {result['data'][asset]['avg']}% de cumplimiento")
-        
-            for rule in result['data'][asset]['validation_result']['detailed_result']:
-                print (f"\t\tRegla: {rule['rule_id']} : {rule['rule_status']} {rule['pass']}/{rule['tp']}")
+    if DEBUG_MODE: 
+        for asset in assets: 
+            print (f"\tActivo: {asset}")
+            print (f"\tHash: {result['data'][asset]['hash_result']}")
+            print (f"\tEvaluado: {result['data'][asset]['done']}")
+            if not (result['data'][asset]['validation_result'] == {}): 
+                print (f"\tEstatus: {result['data'][asset]['status']} - {result['data'][asset]['validation_result']['pass']}/{len(result['data']['rule_set'])} : {result['data'][asset]['avg']}% de cumplimiento")
+            
+                for rule in result['data'][asset]['validation_result']['detailed_result']:
+                    print (f"\t\tRegla: {rule['rule_id']} : {rule['rule_status']} {rule['pass']}/{rule['tp']}")
         
             
 @staticmethod
@@ -242,14 +244,14 @@ def format_response (assets, result):
 @staticmethod
 def evaluate_assets (assets): 
 
-    print (assets)
+    print (assets) if DEBUG_MODE else next
     #print (assets)
     if not len(assets): 
         return "{'status': 'ERROR', 'msg': 'No se encontraron activos'}"
     
+    
     policy = get_policy(assets[0]["policy_id"])[0]
     rules = get_rules(assets[0]["policy_id"])
-
 
     evl = evaluation(f"evaluacion {policy['name']}", policy, assets, rules=rules )
     result = evl.evaluate_policy()
@@ -257,10 +259,10 @@ def evaluate_assets (assets):
     print_evaluation_result(result)
 
     #Guardar resultado en base de datos
-    save_evaluation_result(assets, result)
+    save_evaluation_result(assets, result, policy["id"])
 
     response = format_response(assets, result)
-    print (response)
+    print (response) if DEBUG_MODE else next
     #return result
     return response
 
