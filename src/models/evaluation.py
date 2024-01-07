@@ -198,7 +198,7 @@ def print_evaluation_result (result):
         print (f"\tActivo: {asset}")
         print (f"\tHash: {result['data'][asset]['hash_result']}")
         print (f"\tEvaluado: {result['data'][asset]['done']}")
-        print (f"\tEstatus: {result['data'][asset]['status']} - {result['data'][asset]['avg']}% de cumplimiento")
+        print (f"\tEstatus: {result['data'][asset]['status']} - {result['data'][asset]['validation_result']['pass']}/{len(result['data']['rule_set'])} : {result['data'][asset]['avg']}% de cumplimiento")
         
         for rule in result['data'][asset]['validation_result']['detailed_result']:
             print (f"\t\tRegla: {rule['rule_id']} : {rule['rule_status']} {rule['pass']}/{rule['tp']}")
@@ -213,7 +213,7 @@ def format_response (assets, result):
         "host": asset["host"],
         "name": asset["name"],
         "os": asset["os"],
-        "completed": result['data'][asset]['pass'],
+        "completed": result['data'][asset["host"]]['validation_result']['pass'],
         }
         assets_array.append(asset_format)
     
@@ -241,6 +241,7 @@ def evaluate_assets (assets):
     print_evaluation_result(result)
 
     response = format_response(assets, result)
+    print (response)
     #return result
     return response
 
