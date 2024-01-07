@@ -21,10 +21,8 @@ def getAll():
         diagnosis d
     inner join asset a on
         a.id = d.asset_id
-    inner join `group` g on
-        g.id = a.group_id
-    inner join policy p ON
-        p.id = g.policy_id
+    inner join policy p on
+        p.id = d.policy_id
     where
         d.enabled = true
         and a.enabled = true
