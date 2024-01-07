@@ -39,11 +39,11 @@ def getAll():
 @main.route('/diagnostic_asset/<int:id>', methods=['POST'])
 def diagnostic_asset(id):
     data = get_assets_by_id(id)
-    evaluate_assets(data)
-    return jsonify({'message':'OK', 'data': data}), 200
+    res = evaluate_assets(data)
+    return jsonify({'message':'OK', 'data': res}), 200
 
 @main.route('/diagnostic_group/<int:id>', methods=['POST'])
 def diagnostic_group(id):
     data = get_assets_by_group(id)
-    evaluate_assets(data)
-    return jsonify({'message':'OK', 'data':data}), 200
+    res = evaluate_assets(data)
+    return jsonify({'message':'OK', 'data':res}), 200

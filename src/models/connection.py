@@ -61,12 +61,12 @@ class connection:
     def stablish_connection(self,credentials): 
         try:
             # Connect to the server
-            self.client.connect(self.host, username= credentials['user'], password= credentials['password'], port= self.port)
+            self.client.connect(self.host, username= credentials['user'], password= credentials['password'], port= self.port, timeout=5)
             print ('CONEXIÓN ESTABLECIDA')
             return {'status': 'OK', 'msg': 'conexión establecida'}
         except Exception as e:
             self.client.close()   
-            return {f"status': 'ERROR', 'msg': '{e}"}
+            return {'status': 'ERROR', 'msg': f'{e}'}
         finally:
             del credentials
 

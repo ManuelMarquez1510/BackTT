@@ -80,6 +80,7 @@ class evaluation:
                 evaluation_result[f'{asset["host"]}'] = {'hash_result': result_hash, 'dict_result': host_result, 'status': 'PASS', 'avg': 0 , 'done': "YES"}
 
             else :  
+                print (f"Activo no disponible: {asset}")
                 evaluation_result[f'{asset["host"]}'] = {'hash_result': "", 'dict_result': "", 'status': 'FAIL', 'avg': 0, 'done' : "NO" }
         
         self.result = evaluation_result
@@ -101,21 +102,28 @@ class evaluation:
         #else:
         print ('Evlaluacion politica: Linux')
         hosts_fails = 0
-        for asset in self.result['assets']: 
-            asset_result = self.result[asset]['dict_result']
-            asset_validation = self.validate_rules (asset_result)
-            self.result[asset]['validation_result'] = asset_validation
-            self.result[asset]['status'] = asset_validation['status']
-            self.result[asset]['avg'] = asset_validation['avg']
-            self.result[asset]['completed'] = asset_validation['pass']
-            if asset_validation['status'] == "FAIL": 
+        for asset in self.result['assets']:
+            if  self.result[asset]["done"] == "YES":
+                asset_result = self.result[asset]['dict_result']
+                asset_validation = self.validate_rules (asset_result)
+                self.result[asset]['validation_result'] = asset_validation
+                self.result[asset]['status'] = asset_validation['status']
+                self.result[asset]['avg'] = asset_validation['avg']
+                self.result[asset]['completed'] = asset_validation['pass']
+                if asset_validation['status'] == "FAIL": 
+                    hosts_fails = hosts_fails + 1
+            else : 
+                self.result[asset]['validation_result'] = {}
+                self.result[asset]['status'] = "FAIL"
+                self.result[asset]['avg'] = 0
+                self.result[asset]['completed'] = 0
                 hosts_fails = hosts_fails + 1
 
         if hosts_fails > 0: 
             self.result['policy_status'] = 'FAIL' 
         num_activos = len(self.result['assets'])
         self.result['policy_avg'] = round( 100 - (hosts_fails*100)/num_activos, 2)
-        self.result['policy_completed'] = num_activos - (num_activos-hosts_fails) 
+        self.result['policy_completed'] = num_activos - hosts_fails
 
 
 
@@ -198,22 +206,32 @@ def print_evaluation_result (result):
         print (f"\tActivo: {asset}")
         print (f"\tHash: {result['data'][asset]['hash_result']}")
         print (f"\tEvaluado: {result['data'][asset]['done']}")
-        print (f"\tEstatus: {result['data'][asset]['status']} - {result['data'][asset]['validation_result']['pass']}/{len(result['data']['rule_set'])} : {result['data'][asset]['avg']}% de cumplimiento")
+        if not (result['data'][asset]['validation_result'] == {}): 
+            print (f"\tEstatus: {result['data'][asset]['status']} - {result['data'][asset]['validation_result']['pass']}/{len(result['data']['rule_set'])} : {result['data'][asset]['avg']}% de cumplimiento")
         
-        for rule in result['data'][asset]['validation_result']['detailed_result']:
-            print (f"\t\tRegla: {rule['rule_id']} : {rule['rule_status']} {rule['pass']}/{rule['tp']}")
+            for rule in result['data'][asset]['validation_result']['detailed_result']:
+                print (f"\t\tRegla: {rule['rule_id']} : {rule['rule_status']} {rule['pass']}/{rule['tp']}")
+        
             
 
 def format_response (assets, result): 
     assets_completed = result ['data']['policy_completed']
     assets_array = []
+
     for asset in assets: 
+        if result['data'][asset["host"]]['validation_result'] == {}: 
+            comp = 0
+            err = True
+        else : 
+            comp = result['data'][asset["host"]]['validation_result']['pass']
+            err = False
         asset_format = {
         "group": asset["group"], 
         "host": asset["host"],
         "name": asset["name"],
         "os": asset["os"],
-        "completed": result['data'][asset["host"]]['validation_result']['pass'],
+        "completed": comp,
+        "error" : err
         }
         assets_array.append(asset_format)
     
@@ -275,6 +293,8 @@ def evaluate_assets (assets):
 
 
     assets_completed: 1, 
+    date : 
+    time : 
     assets: [
       {
         group: 'Default Ubuntu',
@@ -284,6 +304,7 @@ def evaluate_assets (assets):
         password: 'root123',
         user: 'dbadmin',
         completed: 3,
+        error: true|false
       },
       {
         group: 'Default Ubuntu',
