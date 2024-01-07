@@ -12,7 +12,9 @@ def getAll():
         p.version,
         p.last_modified_date,
         p.operative_system_id,
-        os.name as operative_system
+        os.name as operative_system,
+        p.description,
+        p.is_default
     FROM
         policy p
         inner join operative_system os on os.id = p.operative_system_id
