@@ -26,11 +26,9 @@ class connection:
         #print (credentials)
         if credentials['status'] == 'OK':   
             credentials = credentials['data'][0]
-            
-            self.client.connect(self.host, username= credentials['user'], password= credentials['password'], port= self.port)
-            print ('CONEXIÓN ESTABLECIDA')
+            status =  self.stablish_connection(credentials) 
             del credentials
-            return {'status': 'OK', 'msg': 'Credenciales no identificadas'}
+            return status
         else:
             self.client.close()
             return {'status': 'ERROR', 'msg': 'Credenciales no identificadas'}
@@ -42,7 +40,12 @@ class connection:
     def send_command(self,comando):
         #print (f"COMMAND: {comando}")
         _stdin, _stdout,_stderr = self.client.exec_command(comando)
-        return (_stdout.read().decode()) 
+        #print ("STDOUT: ",_stdout.read().decode())
+        #print ("STDERR: ", _stderr.read().decode())
+        if _stderr is not None: 
+            return (_stderr.read().decode().strip()) 
+        else:
+            return (_stdout.read().decode().strip()) 
     
     def get_evaluation_file (self, evaluation, filename): 
         sftp = self.client.open_sftp()
@@ -55,33 +58,17 @@ class connection:
 
         self.send_command(f"rm {filename}")
     
-
-
-
-    @staticmethod
-    def test_connection(host, port):
-        client = pk.client.SSHClient()
-        client.set_missing_host_key_policy(pk.AutoAddPolicy())
-        credentials = pam.get_credentials(host)
-        if isinstance (credentials, tuple):   
-            try:
-                # Connect to the server
-                client.connect(host, port, credentials[0], password= credentials[1])
-                print("Conexion realizada con exito")
-                # Close the SSH connection
-                client.close()
-
-            except Exception as e:
-                print(f"Error: {e}")
-                client.close()    
-            finally:
-                del credentials
-        
-        else:
-            """LOG: CREDENCIALES NO IDENTIFICADAS """
-            print("Credenciales no identificadas")
-            client.close()
-            return 0
+    def stablish_connection(self,credentials): 
+        try:
+            # Connect to the server
+            self.client.connect(self.host, username= credentials['user'], password= credentials['password'], port= self.port)
+            print ('CONEXIÓN ESTABLECIDA')
+            return {'status': 'OK', 'msg': 'conexión establecida'}
+        except Exception as e:
+            self.client.close()   
+            return {f"status': 'ERROR', 'msg': '{e}"}
+        finally:
+            del credentials
 
 
     @staticmethod

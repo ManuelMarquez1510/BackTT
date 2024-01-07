@@ -12,7 +12,8 @@ def get_assets_by_group(id_group):
                 os.name as os,
                 g.name as `group`,
                 ac.user,
-                ac.password
+                ac.password,
+                g.policy_id
             FROM
                 asset a
                 inner join operative_system os on os.id = a.operative_system_id
@@ -45,7 +46,8 @@ def get_assets_by_id(id_asset):
                 os.name as os,
                 g.name as `group`,
                 ac.user,
-                ac.password
+                ac.password,
+                g.policy_id
             FROM
                 asset a
                 inner join operative_system os on os.id = a.operative_system_id

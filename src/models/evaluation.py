@@ -2,15 +2,18 @@
 
 from datetime import datetime
 import src.models.connection as connection
+import src.models.validate_test as test_helper
 #from src.models.internal_api import get_assets_by_group, get_assets_by_id
 # from connection import connection
+from src.services.scap_database_service import get_rules, get_policy
 import hashlib
 
 class evaluation: 
 
-    def __init__ (self, name, policy, assets) -> None: 
+    def __init__ (self, name, policy, assets, rules) -> None: 
         self.name = name
         self.policy = policy
+        self.rules = rules
         self.date = None
         self.time = None
         self.assets = assets
@@ -23,7 +26,7 @@ class evaluation:
         self.time = date_time.strftime("%H:%M:%S")
         
         rules_id = []
-        for rule in self.policy['rule_set']: 
+        for rule in self.rules: 
             rules_id.append (rule['rule_id'])
         
         asset_name= []
@@ -48,21 +51,37 @@ class evaluation:
             #print (asset)
             as_connetion = connection.connection(asset['host'], asset['port'])
             connetion_status = as_connetion.set_connection()
-            if connetion_status['status'] == 'ERROR': 
-                return as_connetion
-            result_array =[]
-            result_string=''
-            print ('INICIA EVALUACIÓN')
-            for rule in self.policy['rule_set']:
-                result = as_connetion.send_command(f"{rule['test']}")
-                result_array.append(result)
-                result_string = result_string + f"{result},"
-            as_connetion.close_connection()
-            print ('CONEXION CERRADA')
-            result_hash=hashlib.sha256(result_string.encode('utf-8')).hexdigest()
-            
-            evaluation_result[f'{asset["host"]}'] = {'hash_result': result_hash, 'string_result' : result_string, 'array_result': result_array,'evaluation_result': [], 'status': 'PASS', 'avg': 0 }
+            if connetion_status['status'] == 'OK':                 
+                print ('INICIA EVALUACIÓN')
+                print (f"Evaluated asset {asset}")
+                rule_counter = 0
+                total_rules = len (self.rules)
 
+                host_result = {}
+
+                for rule in self.rules: #Tests
+                    rule_counter = rule_counter+1
+                    print (f'Evaluation {rule_counter}/{total_rules} : {rule["rule_id"]} ')
+                    test_array_aux = []
+                    for test in rule["tests"]:
+                        array_aux = []
+                        for command in test['tests_dictionary']:
+                            result = as_connetion.send_command(f"{command['test']}")
+                            print (f"\tRegla {rule['rule_id']} comando enviado {command['test']}")
+                            print (f"\tRespuesta obtenida: {result}")
+                            array_aux.append(result)
+                        test_array_aux.append(array_aux)
+                    host_result[rule["rule_id"]] = test_array_aux
+                as_connetion.close_connection()
+                print ('CONEXION CERRADA')
+                result_string = str(host_result)
+                result_hash=hashlib.sha256(result_string.encode('utf-8')).hexdigest()
+                
+                evaluation_result[f'{asset["host"]}'] = {'hash_result': result_hash, 'dict_result': host_result, 'status': 'PASS', 'avg': 0 , 'done': "YES"}
+
+            else :  
+                evaluation_result[f'{asset["host"]}'] = {'hash_result': "", 'dict_result': "", 'status': 'FAIL', 'avg': 0, 'done' : "NO" }
+        
         self.result = evaluation_result
 
         self.evaluate_result()
@@ -70,29 +89,78 @@ class evaluation:
         return {'status' : 'OK', 'data': evaluation_result }
         
 
-    def evaluate_result (self): 
-        windows_list = ['Windows Server', 'Windows 10']
-        type_os = self.policy['OS']
 
-        if type_os.upper() in [item.upper() for item in windows_list]:
-            print ('Windows policy')
-        else:
-            print ('Evlaluacion politica: Linux')
-            self.evaluate_linux_policy()
-        
-        num_rules = len(self.policy['rule_set'])
-        hosts_fails= 0
+
+
+    def evaluate_result (self): 
+        #windows_list = ['Windows Server', 'Windows 10']
+        #type_os = self.policy['OS']
+
+        #if type_os.upper() in [item.upper() for item in windows_list]:
+        #    print ('Windows policy')
+        #else:
+        print ('Evlaluacion politica: Linux')
+        hosts_fails = 0
         for asset in self.result['assets']: 
-            num_fails = (self.result[asset]['evaluation_result']).count('FAIL')
-            self.result[asset]['avg'] = round( 100 - (num_fails*100)/num_rules, 2)
-            if num_fails > 0:  
-                self.result[asset]['status'] = 'FAIL'
+            asset_result = self.result[asset]['dict_result']
+            asset_validation = self.validate_rules (asset_result)
+            self.result[asset]['validation_result'] = asset_validation
+            self.result[asset]['status'] = asset_validation['status']
+            self.result[asset]['avg'] = asset_validation['avg']
+            self.result[asset]['completed'] = asset_validation['pass']
+            if asset_validation['status'] == "FAIL": 
                 hosts_fails = hosts_fails + 1
-        
+
         if hosts_fails > 0: 
             self.result['policy_status'] = 'FAIL' 
-        self.result['policy_avg'] = round( 100 - (hosts_fails*100)/len(self.result['assets']), 2)
+        num_activos = len(self.result['assets'])
+        self.result['policy_avg'] = round( 100 - (hosts_fails*100)/num_activos, 2)
+        self.result['policy_completed'] = num_activos - (num_activos-hosts_fails) 
 
+
+
+    def validate_rules (self, asset_results):
+        validation_result = []
+        rule_pass_count = 0
+        num_rules = len(self.rules)
+        asset_status = "FAIL"
+        for rule in self.rules:
+            evaluation_result = asset_results[rule['rule_id']]
+            test_count = 0
+            rule_status = "FAIL"
+            total_proof = 0
+            fails = 0
+            pass_s = 0
+            for test in rule['tests']:
+                test_type = test['test_type']
+                comment = test['test_comment']
+                proof_counts = 0
+                for proof in test['tests_dictionary']: 
+                    result = False
+                    if test_type == 'dpkginfo_test': 
+                        #print (rule)
+                        result = test_helper.dpkginfo_test (evaluation_result[test_count][proof_counts], comment)
+                    
+                    if result:
+                        pass_s = pass_s+1
+                    else :
+                        fails = fails+1 
+                    
+                    total_proof = total_proof+1
+                    proof_counts= proof_counts +1
+                test_count = test_count + 1
+            
+            if fails == 0: 
+                rule_status = "PASS"
+                rule_pass_count = rule_pass_count + 1 
+        
+            validation_result.append({"rule_id": rule['rule_id'], "rule_status": rule_status, "pass" : pass_s, "fail": fails, "tp": total_proof })
+
+        if num_rules - rule_pass_count == 0:
+            asset_status = "PASS"
+        avg = round((rule_pass_count*100)/num_rules, 2)
+
+        return {"status" : asset_status, "avg": avg, "pass": rule_pass_count,"detailed_result" : validation_result}
 
 
 
@@ -102,7 +170,7 @@ class evaluation:
 
     def evaluate_linux_policy (self):
         count = 0
-        for rule in self.policy['rule_set']:
+        for rule in self.rules:
             rule_test = rule['test']
             rule_test_comment = rule['comment']
             rule_test_type = rule['test_type']
@@ -112,115 +180,72 @@ class evaluation:
             if rule_test_type == 'dpkginfo_test': 
                 self.dpkginfo_test(rule_test_comment,count)
 
-            count= count + 1
-        
-
-    def dpkginfo_test(self,rule_test_comment,count):
-        rule_validation_condition = 1
-        if 'is not installed' in rule_test_comment :
-            rule_validation_condition = 0
-        for asset in self.assets:
-            asset_result = self.result[asset['host']]['array_result'][count]
-            is_in_result = 1
-            if asset_result == '': 
-                is_in_result =0
-            
-            if rule_validation_condition and is_in_result: 
-                self.result[asset['host']]['evaluation_result'].append('PASS')
-                #print (f"asset: {asset['host']} rule: {rule['rule_id']}-{rule_test_comment} STATUS: PASS")
-                #print (f"asset: {asset['host']} result: {asset_result} status: PASS")
-            elif not rule_validation_condition and not is_in_result: 
-                self.result[asset['host']]['evaluation_result'].append('PASS')
-                #print (f"asset: {asset['host']} rule: {rule['rule_id']}-{rule_test_comment} STATUS: PASS")
-                #print (f"asset: {asset['host']} result: {asset_result} status: PASS")
-            else: 
-                self.result[asset['host']]['evaluation_result'].append('FAIL')
-                #print (f"asset: {asset['host']} rule: {rule['rule_id']}-{rule_test_comment} STATUS: FAIL")
-                #print (f"asset: {asset['host']} result: {asset_result} status: FAIL")
-
-
-                
+            count= count + 1            
 
 @staticmethod
 def print_evaluation_result (result):
     assets = result['data']['assets']
-    print (f"""
+    result_str = f"""
     Nombre de evaluacion: {result['data']['name']}
     Politica evaluada: {result['data']['policy']}
     Fecha: {result['data']['date']} hora: {result['data']['time']}
     Activos evaluados: {" ".join(map(str, assets))}
     Estatus de la evaluación: {result['data']['policy_status']} - {result['data']['policy_avg']}% host
-    Resultados: """)
+    Resultados: """
+    print (result_str)
+
     for asset in assets: 
         print (f"\tActivo: {asset}")
         print (f"\tHash: {result['data'][asset]['hash_result']}")
+        print (f"\tEvaluado: {result['data'][asset]['done']}")
         print (f"\tEstatus: {result['data'][asset]['status']} - {result['data'][asset]['avg']}% de cumplimiento")
-        for index in range (len( result['data']['rule_set'])):
-            print (f"\tRule id: {result['data']['rule_set'][index]} - {result['data'][asset]['evaluation_result'][index]}")
+        
+        for rule in result['data'][asset]['validation_result']['detailed_result']:
+            print (f"\t\tRegla: {rule['rule_id']} : {rule['rule_status']} {rule['pass']}/{rule['tp']}")
+            
+
+def format_response (assets, result): 
+    assets_completed = result ['data']['policy_completed']
+    assets_array = []
+    for asset in assets: 
+        asset_format = {
+        "group": asset["group"], 
+        "host": asset["host"],
+        "name": asset["name"],
+        "os": asset["os"],
+        "completed": result['data'][asset]['pass'],
+        }
+        assets_array.append(asset_format)
     
+    return {"assets_completed": assets_completed, "assets": assets_array}
+    
+
     
     
 """ METODOS EXPUESTOS AL INTERNAL API """
 @staticmethod
 def evaluate_assets (assets): 
 
+    print (assets)
     #print (assets)
     if not len(assets): 
         return "{'status': 'ERROR', 'msg': 'No se encontraron activos'}"
     
-    policy = get_policy()
+    policy = get_policy(assets[0]["policy_id"])[0]
+    rules = get_rules(assets[0]["policy_id"])
 
-    evl = evaluation("evaluacion prueba", policy, assets)
+
+    evl = evaluation(f"evaluacion {policy['name']}", policy, assets, rules=rules )
     result = evl.evaluate_policy()
-    print ( result)
+    #print ( result['data']['192.168.222.129'])
     print_evaluation_result(result)
-    return result
+
+    response = format_response(assets, result)
+    #return result
+    return response
 
 
-""" METODOS DE PRUEBA ELIMINAR AL PONER EN PRODUCCION Y HACER REFERENCIAS CORRESPONDIENTES """
-
-def get_policy():
-  policy = {
-    'policy_id': '00001', 
-    'name':'Canonical Ubuntu 20.04 LTS STIG SCAP Benchmark',
-    'description': 'This Security Technical Implementation Guide is published as a tool to improve the security of Department of Defense (DOD) information systems. The requirements are derived from the National Institute of Standards and Technology (NIST) 800-53 and related documents. Comments or proposed revisions to this document should be sent via email to the following address: disa.stig_spt@mail.mil.',
-    'OS' : 'Ubuntu 20.04 LTS',
-    'rule_set': [
-        {
-            'rule_id': "238200",
-            'title': "The Ubuntu operating system must allow users to directly initiate a session lock for all connection types.",
-            'severity': "medium", 
-            'weight' : 10.0,
-            'description': 'A session lock is a temporary action taken when a user stops work and moves away from the immediate physical vicinity of the information system but does not want to log out because of the temporary nature of the absence. The session lock is implemented at the point where session activity can be determined. Rather than be forced to wait for a period of time to expire before the user session can be locked, the Ubuntu operating systems need to provide users with the ability to manually invoke a session lock so users may secure their session if they need to temporarily vacate the immediate physical vicinity. Satisfies: SRG-OS-000030-GPOS-00011, SRG-OS-000031-GPOS-00012',
-            'fix_text': 'Rule fix_text: Install the "vlock" package (if it is not already installed) by running the following command: $ sudo apt-get install vlock',
-            'test_type': 'dpkginfo_test', 
-            'test': 'dpkg -l | grep vlock',
-            'comment': 'package vlock is installed'
-        },
-        {
-            'rule_id': "238326",
-            'title': "The Ubuntu operating system must not have the telnet package installed.",
-            'severity': "high", 
-            'weight' : 10.0,
-            'description': 'Passwords need to be protected at all times, and encryption is the standard method for protecting passwords. If passwords are not encrypted, they can be plainly read (i.e., clear text) and easily compromised.',
-            'fix_text': 'Remove the telnet package from the Ubuntu operating system by running the following command: $ sudo apt-get remove telnetd',
-            'test_type': 'dpkginfo_test', 
-            'test': 'dpkg -l | grep telnetd',
-            'comment': 'package telnetd is not installed'
-        },{
-            'rule_id': "238327",
-            'title': "The Ubuntu operating system must not have the rsh-server package installed.",
-            'severity': "high", 
-            'weight' : 10.0,
-            'description': 't is detrimental for operating systems to provide, or install by default, functionality exceeding requirements or mission objectives. These unnecessary capabilities or services are often overlooked and therefore may remain unsecured. They increase the risk to the platform by providing additional attack vectors. Operating systems are capable of providing a wide variety of functions and services. Some of the functions and services, provided by default, may not be necessary to support essential organizational operations (e.g., key missions, functions). Examples of non-essential capabilities include, but are not limited to, games, software packages, tools, and demonstration software, not related to requirements or providing a wide array of functionality not required for every mission, but which cannot be disabled.',
-            'fix_text': 'Configure the Ubuntu operating system to disable non-essential capabilities by removing the rsh-server package from the system with the following command: $ sudo apt-get remove rsh-server',
-            'test_type': 'dpkginfo_test', 
-            'test': 'dpkg -l | grep rsh-server',
-            'comment': 'package rsh-server is not installed'
-        }
-        ]  
-    }
-  return policy    
+""" METODOS DE PRUEBA ELIMINAR AL PONER EN PRODUCCION Y HACER REFERENCIAS CORRESPONDIENTES """ 
 
 
 
@@ -238,9 +263,9 @@ def get_policy():
         'hash_result': 'b0f8fd8fd26179f77e373926e21ae518fd359eb90a47f4d5d63efcaec105d901', 
         'string_result': 'ii  vlock                                 2.2.2-8                           amd64        Virtual Console locking program\n,ii  telnetd                               0.17-41.2build1                   amd64        basic telnet server\n,,',
         'array_result': ['ii  vlock                                 2.2.2-8                           amd64        Virtual Console locking program\n', 'ii  telnetd                               0.17-41.2build1                   amd64        basic telnet server\n', ''],
-        'evaluation_result': [],
-        'status': 'FAIL',
-        'avg': 0
+        'evaluation_result': [FAIL(1/3), PASS, FAIL],
+        'status': 'FAIL|PASS',
+        'avg': 33.3%
     }
     '192.168.3.xx' : {
         'hash_result': 
@@ -248,6 +273,25 @@ def get_policy():
     }}
 
 
-
+    assets_completed: 1, 
+    assets: [
+      {
+        group: 'Default Ubuntu',
+        host: 'scaptooldev.ddns.net',
+        name: 'LuisMiguel',
+        os: 'Ubuntu 20.0.4 LTS',
+        password: 'root123',
+        user: 'dbadmin',
+        completed: 3,
+      },
+      {
+        group: 'Default Ubuntu',
+        host: 'manuel-scap.eastus.cloudapp.azure.com',
+        name: 'ManuelMarquez',
+        os: 'Ubuntu 20.0.4 LTS',
+        password: 'BurroBlanco123',
+        user: 'dbmanuel',
+        completed: 1,
+      },
 
  """
