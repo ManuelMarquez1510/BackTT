@@ -6,6 +6,7 @@ def get_assets_by_group(id_group):
 
             getAssets = """
             SELECT
+                a.id as asset_id,
                 a.name,
                 a.host,
                 a.port,
@@ -40,6 +41,7 @@ def get_assets_by_id(id_asset):
 
             getAssets = """
             SELECT
+                a.id as asset_id,
                 a.name,
                 a.host,
                 a.port,

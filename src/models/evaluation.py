@@ -5,7 +5,7 @@ import src.models.connection as connection
 import src.models.validate_test as test_helper
 #from src.models.internal_api import get_assets_by_group, get_assets_by_id
 # from connection import connection
-from src.services.scap_database_service import get_rules, get_policy
+from src.services.scap_database_service import get_rules, get_policy, save_evaluation_result
 import hashlib
 
 class evaluation: 
@@ -94,12 +94,7 @@ class evaluation:
 
 
     def evaluate_result (self): 
-        #windows_list = ['Windows Server', 'Windows 10']
-        #type_os = self.policy['OS']
-
-        #if type_os.upper() in [item.upper() for item in windows_list]:
-        #    print ('Windows policy')
-        #else:
+        
         print ('Evlaluacion politica: Linux')
         hosts_fails = 0
         for asset in self.result['assets']:
@@ -146,9 +141,11 @@ class evaluation:
                 for proof in test['tests_dictionary']: 
                     result = False
                     if test_type == 'dpkginfo_test': 
-                        #print (rule)
                         result = test_helper.dpkginfo_test (evaluation_result[test_count][proof_counts], comment)
                     
+                    elif test_type == 'textfilecontent54_test': 
+                        #print (rule)
+                        next
                     if result:
                         pass_s = pass_s+1
                     else :
@@ -190,6 +187,7 @@ class evaluation:
 
             count= count + 1            
 
+
 @staticmethod
 def print_evaluation_result (result):
     assets = result['data']['assets']
@@ -213,7 +211,7 @@ def print_evaluation_result (result):
                 print (f"\t\tRegla: {rule['rule_id']} : {rule['rule_status']} {rule['pass']}/{rule['tp']}")
         
             
-
+@staticmethod
 def format_response (assets, result): 
     assets_completed = result ['data']['policy_completed']
     assets_array = []
@@ -258,14 +256,13 @@ def evaluate_assets (assets):
     #print ( result['data']['192.168.222.129'])
     print_evaluation_result(result)
 
+    #Guardar resultado en base de datos
+    save_evaluation_result(assets, result)
+
     response = format_response(assets, result)
     print (response)
     #return result
     return response
-
-
-""" METODOS DE PRUEBA ELIMINAR AL PONER EN PRODUCCION Y HACER REFERENCIAS CORRESPONDIENTES """ 
-
 
 
 
@@ -280,40 +277,21 @@ def evaluate_assets (assets):
     'policy_avg' : 0 
     '192.168.3.55': {
         'hash_result': 'b0f8fd8fd26179f77e373926e21ae518fd359eb90a47f4d5d63efcaec105d901', 
-        'string_result': 'ii  vlock                                 2.2.2-8                           amd64        Virtual Console locking program\n,ii  telnetd                               0.17-41.2build1                   amd64        basic telnet server\n,,',
-        'array_result': ['ii  vlock                                 2.2.2-8                           amd64        Virtual Console locking program\n', 'ii  telnetd                               0.17-41.2build1                   amd64        basic telnet server\n', ''],
-        'evaluation_result': [FAIL(1/3), PASS, FAIL],
         'status': 'FAIL|PASS',
-        'avg': 33.3%
+        'avg': 33.3,
+        'done': YES|NO,             #Si se pudo evaluar el 
+        'validation_result': {
+            "status" : FAIL|PASS,   # status del activo 
+            "avg": 33.3,            # porcentaje del activo 
+            "pass": 10,             # numero de reglas cumplidas
+            "detailed_result" : [{      #Resultado por regla
+                "rule_id": 238200,
+                "rule_status": PASS|FAIL,
+                "pass" : 1,
+                "fail": 3, 
+                "tp": 4
+            }]
+        }
+
     }
-    '192.168.3.xx' : {
-        'hash_result': 
-    }
-    }}
-
-
-    assets_completed: 1, 
-    date : 
-    time : 
-    assets: [
-      {
-        group: 'Default Ubuntu',
-        host: 'scaptooldev.ddns.net',
-        name: 'LuisMiguel',
-        os: 'Ubuntu 20.0.4 LTS',
-        password: 'root123',
-        user: 'dbadmin',
-        completed: 3,
-        error: true|false
-      },
-      {
-        group: 'Default Ubuntu',
-        host: 'manuel-scap.eastus.cloudapp.azure.com',
-        name: 'ManuelMarquez',
-        os: 'Ubuntu 20.0.4 LTS',
-        password: 'BurroBlanco123',
-        user: 'dbmanuel',
-        completed: 1,
-      },
-
- """
+""" 
