@@ -1,6 +1,8 @@
 from flask import  Blueprint, jsonify, request
 from src.database.db_mysql import db, dataToJson
 from src.models.internal_api import init_connection
+from src.services.AssetsService import get_assets_by_id
+
 main = Blueprint('assets_blueprint',__name__)
 
 @main.route('/', methods=['GET'])
@@ -99,3 +101,7 @@ def delete(id):
     except Exception as e:
         db.connection.rollback()
         return jsonify({'message': "Ocurrió un error inesperado", 'error': str(e)}), 500
+    
+@main.route('/asset/<int:id>', methods=['GET'])
+def asset(id):
+    return jsonify({'message':'OK', 'data': get_assets_by_id(id)}), 200
