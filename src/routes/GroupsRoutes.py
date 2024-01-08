@@ -13,6 +13,7 @@ def getAll():
         g.creation_date,
         g.policy_id,
         p.name as policy,
+        p.operative_system_id,
         COUNT(a.id) as assets_quantity
     FROM
         `group` g
@@ -41,7 +42,23 @@ def create():
             cursor.execute(insert_group, (body['name'], body['policy_id']))
             db.connection.commit()
 
-        return jsonify({'message': 'Grupo creado!'}), 201
+        return jsonify({'message': '¡Grupo creado!'}), 201
+    
+    except Exception as e:
+        db.connection.rollback()
+        return jsonify({'message': "Ocurrió un error inesperado", 'error': str(e)}), 500
+    
+@main.route('/update/<int:id>', methods=['PUT'])
+def update(id):
+    try:
+        with db.connection.cursor() as cursor:
+            body = request.get_json()
+            update_group = "UPDATE `group` SET name = %s, policy_id = %s WHERE id = %s"
+            cursor.execute("START TRANSACTION")
+            cursor.execute(update_group, (body['name'], body['policy_id'], id))
+            db.connection.commit()
+
+        return jsonify({'message': '¡Grupo actualizado!'}), 201
     
     except Exception as e:
         db.connection.rollback()
