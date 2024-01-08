@@ -26,6 +26,9 @@ class evaluation:
         self.date = date_time.strftime("%d-%m-%y")
         self.time = date_time.strftime("%H:%M:%S")
         
+        if self.rules is None or self.rules == [] : 
+            print (" No rules ")
+            return 0
         rules_id = []
         for rule in self.rules: 
             rules_id.append (rule['rule_id'])
@@ -67,9 +70,16 @@ class evaluation:
                     for test in rule["tests"]:
                         array_aux = []
                         for command in test['tests_dictionary']:
-                            result = as_connetion.send_command(f"{command['test']}")
-                            print (f"\tRegla {rule['rule_id']} comando enviado {command['test']}") if DEBUG_MODE else next
+
+                            aux = bytes(command['test'], 'utf-8').decode('unicode_escape')
+                            #aux = command['test'].replace("\\\\","\\")
+
+                            print (f"\tRegla {rule['rule_id']} comando enviado {(aux)}") if DEBUG_MODE else next
+                            #print (f"\t2 Regla {rule['rule_id']} comando enviado {repr(aux)} num {len (aux)}") if DEBUG_MODE else next
+                            result = as_connetion.send_command(aux)
                             print (f"\tRespuesta obtenida: {result}") if DEBUG_MODE else next
+                            #grep -E '^\\s*PASS_MIN_DAYS\\s+(\\d*)' /etc/login.defs
+                            #grep -E '^\s*PASS_MIN_DAYS\s+(\d*)' /etc/login.defs
                             array_aux.append(result)
                         test_array_aux.append(array_aux)
                     host_result[rule["rule_id"]] = test_array_aux
@@ -135,7 +145,7 @@ class evaluation:
             total_proof = 0
             fails = 0
             pass_s = 0
-            test_helper.print_rule(rule)
+            #test_helper.print_rule(rule)
             for test in rule['tests']:
                 test_type = test['test_type']
                 comment = test['test_comment']
@@ -146,8 +156,7 @@ class evaluation:
                         result = test_helper.dpkginfo_test (evaluation_result[test_count][proof_counts], comment)
                     
                     elif test_type == 'textfilecontent54_test': 
-                        #result = test_helper.textfilecontent54_test (evaluation_result[test_count][proof_counts], test, comment)
-                        next
+                        result = test_helper.textfilecontent54_test (evaluation_result[test_count][proof_counts], test, proof)
                     if result:
                         pass_s = pass_s+1
                     else :
@@ -201,16 +210,16 @@ def print_evaluation_result (result):
     Estatus de la evaluación: {result['data']['policy_status']} - {result['data']['policy_avg']}% host
     Resultados: """
     print (result_str)
-    if DEBUG_MODE: 
-        for asset in assets: 
-            print (f"\tActivo: {asset}")
-            print (f"\tHash: {result['data'][asset]['hash_result']}")
-            print (f"\tEvaluado: {result['data'][asset]['done']}")
-            if not (result['data'][asset]['validation_result'] == {}): 
-                print (f"\tEstatus: {result['data'][asset]['status']} - {result['data'][asset]['validation_result']['pass']}/{len(result['data']['rule_set'])} : {result['data'][asset]['avg']}% de cumplimiento")
-            
-                for rule in result['data'][asset]['validation_result']['detailed_result']:
-                    print (f"\t\tRegla: {rule['rule_id']} : {rule['rule_status']} {rule['pass']}/{rule['tp']}")
+    #if DEBUG_MODE: 
+    for asset in assets: 
+        print (f"\tActivo: {asset}")
+        print (f"\tHash: {result['data'][asset]['hash_result']}")
+        print (f"\tEvaluado: {result['data'][asset]['done']}")
+        if not (result['data'][asset]['validation_result'] == {}): 
+            print (f"\tEstatus: {result['data'][asset]['status']} - {result['data'][asset]['validation_result']['pass']}/{len(result['data']['rule_set'])} : {result['data'][asset]['avg']}% de cumplimiento")
+        
+            for rule in result['data'][asset]['validation_result']['detailed_result']:
+                print (f"\t\tRegla: {rule['rule_id']} : {rule['rule_status']} {rule['pass']}/{rule['tp']}")
         
             
 @staticmethod

@@ -31,5 +31,23 @@ def dpkginfo_test(result, rule_test_comment):
     return is_expected == is_in_result
 
 
-def textfilecontent54_test(result): 
-    next
+def textfilecontent54_test(result, test, proof):
+
+    state = test['state']
+    comment = test['state_comment']
+
+    if  "No such file or directory" in result: 
+        return False
+    
+    elif "Permission denied" in result: 
+        return False
+    
+    elif state in result:
+        return True
+    
+    else: 
+        print (f"\n\nResult {result}")
+        print (f"test {test}")
+        print (f"Proof {proof}") 
+
+    return False

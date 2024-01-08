@@ -40,12 +40,23 @@ class connection:
     def send_command(self,comando):
         #print (f"COMMAND: {comando}")
         _stdin, _stdout,_stderr = self.client.exec_command(comando)
+        stdout_var = _stdout.read().decode().strip()
+        stderr_var = _stderr.read().decode().strip()
+        #print (f"STDOUT: {stdout_var} {len(stdout_var)}")
+        #print (f"STDERR: {stderr_var} {len(stderr_var)}")
+        if len (stdout_var) == 0: 
+            return (stderr_var) 
+        else:
+            return (stdout_var)
+    
+    #print (f"COMMAND: {comando}")
+        _stdin, _stdout,_stderr = self.client.exec_command(comando)
         #print ("STDOUT: ",_stdout.read().decode())
         #print ("STDERR: ", _stderr.read().decode())
         if _stderr is not None: 
             return (_stderr.read().decode().strip()) 
         else:
-            return (_stdout.read().decode().strip()) 
+            return (_stdout.read().decode().strip())
     
     def get_evaluation_file (self, evaluation, filename): 
         sftp = self.client.open_sftp()

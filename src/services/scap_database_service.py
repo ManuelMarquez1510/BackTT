@@ -23,8 +23,9 @@ def get_rules(policy_id):
             
             cursor.execute(getRules,(policy_id,))
             result = cursor.fetchall()
+            #print (f"DB Scap {result}")
             data = dataToJson(cursor.description, result)
-
+            print (f"PASS")
             for rule in data: 
                 tests = json.loads(rule['tests'])
                 rule['tests'] = tests
