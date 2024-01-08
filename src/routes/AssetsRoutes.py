@@ -8,23 +8,25 @@ def getAll():
     cursor = db.connection.cursor()
     sql = """
    SELECT
-    a.id as "key",
-    a.id,
-    a.name,
-    a.host,
-    a.status,
-    a.last_modified_date,
-    a.operative_system_id,
-    os.name as operative_system,
-    g.name as group_name
-FROM
-    asset a
-    INNER JOIN operative_system os ON os.id = a.operative_system_id
-    LEFT JOIN `group` g ON a.group_id = g.id
-WHERE
-    a.enabled = true
-ORDER BY
-    a.last_modified_date DESC;
+        a.id as "key",
+        a.id,
+        a.name,
+        a.host,
+        a.status,
+        a.last_modified_date,
+        a.operative_system_id,
+        os.name as operative_system,
+        g.name as group_name,
+        p.name as policy_asigned
+    FROM
+        asset a
+        INNER JOIN operative_system os ON os.id = a.operative_system_id
+        LEFT JOIN `group` g ON a.group_id = g.id
+        INNER JOIN policy p ON p.id = g.policy_id
+    WHERE
+        a.enabled = true
+    ORDER BY
+        a.last_modified_date DESC;
 
     """
     cursor.execute(sql)
